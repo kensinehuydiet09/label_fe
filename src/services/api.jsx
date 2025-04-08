@@ -177,6 +177,26 @@ export const apiService = {
       throw error;
     }
   },
+
+  postFormData: async (endpoint, data = {}, options = {}) => {
+    try {
+      const formData = new FormData();
+      Object.keys(data).forEach(key => {
+        formData.append(key, data[key]);
+      });
+      
+      const response = await api.post(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        ...options,
+      });
+      
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
   
   put: async (endpoint, data = {}, options = {}) => {
     try {

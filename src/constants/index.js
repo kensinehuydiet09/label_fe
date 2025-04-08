@@ -5,8 +5,10 @@ const Constants = {
   API_ENDPOINTS: {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
-    USER_PROFILE: "/user/profile",
     REFRESH_TOKEN: "/auth/refresh-token",
+    USER_PROFILE: "/user/profile",
+    UPLOAD_FILE: "/user/upload",
+    CREATE_PROJECT : "/user/shipments",
     PRODUCTS: "/products",
   },
 
