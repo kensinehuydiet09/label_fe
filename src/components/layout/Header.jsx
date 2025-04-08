@@ -6,14 +6,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UserCircle } from "lucide-react";
+import { UserCircle, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-4 justify-between">
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={onMenuClick}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
           <div className="text-xl font-bold">LOGO</div>
           <ThemeToggle />
         </div>

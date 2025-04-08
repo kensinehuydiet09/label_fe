@@ -35,7 +35,10 @@ const Sidebar = () => {
   const location = useLocation();
 
   return (
-    <div className="border-r h-screen w-64">
+    <div className="h-full w-full bg-background">
+      <div className="flex h-16 items-center border-b px-4">
+        <span className="text-lg font-semibold">Menu</span>
+      </div>
       <nav className="space-y-1 p-4">
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -46,7 +49,7 @@ const Sidebar = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors",
                 isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
               )}
             >
