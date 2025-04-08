@@ -1,31 +1,31 @@
-import React from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+// AppRoutes.jsx
+import { useAuth } from "@/auth/AuthContext";
+import { AuthPage } from "@/auth/AuthPage";
+import React from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import PrivateRoutes from "./PrivateRoutes";
+import Constants from "@/constants";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL || '/';
+const BASE_URL = Constants.BASE_URL;
 
 const AppRoutes = () => {
   const { currentUser } = useAuth();
-  console.log("🚀 ~ AppRoutes ~ currentUser:", currentUser)
-
+  
+  
   return (
-    <BrowserRouter basename={BASE_URL}>
+    <BrowserRouter>
       <Routes>
-        <Route element={<App />}>
-          <Route path="error/*" element={<ErrorsPage />} />
-          <Route path="logout" element={<Logout />} />
-
-          {currentUser ? (
-            <>
-              <Route path="/*" element={<PrivateRoutes />} />
-              <Route index element={<Navigate to="/dashboard" />} />
-            </>
-          ) : (
-            <>
-              <Route path="auth/*" element={<AuthPage />} />
-              <Route path="*" element={<Navigate to="/auth" />} />
-            </>
-          )}
-        </Route>
+        <Route path="/auth/*" element={
+          currentUser ? <Navigate to="/dashboard" /> : <AuthPage />
+        } />
+        
+        <Route path="/*" element={
+          currentUser ? <PrivateRoutes /> : <Navigate to="/auth/login" />
+        } />
+        
+        <Route path="/" element={
+          currentUser ? <Navigate to="/dashboard" /> : <Navigate to="/auth/login" />
+        } />
       </Routes>
     </BrowserRouter>
   );
