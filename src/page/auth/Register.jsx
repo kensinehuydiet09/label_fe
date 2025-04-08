@@ -23,7 +23,6 @@ const Register = () => {
       
       const results = await register(email, password, username);
 
-      console.log("🚀 ~ handleSubmit ~ results:", results);
       if(results.success) {
         navigate("/dashboard");
       }else{

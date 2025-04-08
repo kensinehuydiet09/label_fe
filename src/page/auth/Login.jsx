@@ -22,7 +22,6 @@ const Login = () => {
       
       // Gọi function login từ AuthContext
       const results = await login(email, password);
-      console.log("🚀 ~ handleSubmit ~ results:", results)
       
       // Nếu login thành công, navigate đến trang dashboard
       navigate("/dashboard");
