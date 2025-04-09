@@ -11,6 +11,9 @@ const Constants = {
     CREATE_PROJECT : "/user/shipments",
     USER_GET_PROJECT : "/user/shipments",
     USER_GET_PROJECT_BY_ID : "/user/shipment",
+
+    ADMIN_GET_USERS: "/admin/users",
+    ADMIN_GET_USER_BY_ID: "/admin/user",
     PRODUCTS: "/products",
   },
 

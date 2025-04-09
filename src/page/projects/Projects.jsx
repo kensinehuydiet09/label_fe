@@ -24,7 +24,9 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Loader2
+  Loader2,
+  MoreHorizontal,
+  Eye
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -32,7 +34,8 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -46,6 +49,14 @@ import { CreateProjectDialog } from '@/components/project/CreateProjectDialog';
 import { EditProjectDialog } from '@/components/project/EditProjectDialog';
 import { apiService } from '@/services/api';
 import Constants from '@/constants';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Projects = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -64,6 +75,7 @@ const Projects = () => {
     hasPrevPage: false
   });
   const [pageSize, setPageSize] = useState(10);
+  const [activeView, setActiveView] = useState('table');
 
   const fetchProjects = async (page = 1, limit = pageSize) => {
     setLoading(true);
@@ -90,6 +102,26 @@ const Projects = () => {
   useEffect(() => {
     fetchProjects(1, pageSize);
   }, [pageSize]); 
+
+  useEffect(() => {
+    // Filter projects based on search query and status
+    let filtered = [...projects];
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(p => 
+        p.projectName.toLowerCase().includes(query) || 
+        p.id.toLowerCase().includes(query)
+      );
+    }
+    
+    if (statusFilter !== 'All') {
+      filtered = filtered.filter(p => p.status === statusFilter.toLowerCase());
+    }
+    
+    // Here we would typically call API with filters instead of filtering client-side
+    // For this example, we're just filtering the existing data
+  }, [searchQuery, statusFilter, pageSize]);
 
   const handlePageChange = (newPage) => {
     fetchProjects(newPage, pageSize);
@@ -139,77 +171,256 @@ const Projects = () => {
 
   // Calculate project statistics
   const projectStats = {
-    total: projects.length,
+    total: pagination.total || 0,
     active: projects.filter(p => p.status === 'active').length,
     completed: projects.filter(p => p.status === 'completed').length,
     other: projects.filter(p => !['active', 'completed'].includes(p.status)).length
   };
 
+  // Function to handle status filtering from the card UI
+  const handleStatusFilterFromCard = (status) => {
+    setStatusFilter(status);
+  };
+
+  const ProjectCard = ({ project }) => (
+    <Card className="h-full">
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-base font-medium">{project.projectName}</CardTitle>
+            <CardDescription className="mt-1">ID: {project.id}</CardDescription>
+          </div>
+          <Badge className={getStatusColor(project.status)}>
+            {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pb-2">
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Created:</span>
+            <span>{formatDate(project.createdAt)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Orders:</span>
+            <span>{project.totalOrders}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Total Cost:</span>
+            <span className="font-medium">${parseFloat(project.totalCost).toFixed(2)}</span>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="pt-2 flex justify-end gap-2">
+        <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+          <Eye className="h-4 w-4" />
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8 w-8 p-0"
+          onClick={() => handleEditProject(project.id)}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="sm" className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+
+  const renderPagination = () => (
+    <div className="flex items-center justify-between px-4 py-3 border-t">
+      <div className="flex flex-1 justify-between sm:hidden">
+        <Button 
+          variant="outline" 
+          onClick={() => handlePageChange(pagination.currentPage - 1)}
+          disabled={!pagination.hasPrevPage}
+          size="sm"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Prev
+        </Button>
+        <span className="flex items-center px-3 py-1 rounded-md bg-gray-100">
+          {pagination.currentPage} / {pagination.totalPages}
+        </span>
+        <Button 
+          variant="outline" 
+          onClick={() => handlePageChange(pagination.currentPage + 1)}
+          disabled={!pagination.hasNextPage}
+          size="sm"
+        >
+          Next
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+      
+      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Showing <span className="font-medium">{projects.length > 0 ? ((pagination.currentPage - 1) * pagination.limit) + 1 : 0}</span> to{" "}
+            <span className="font-medium">
+              {Math.min(pagination.currentPage * pagination.limit, pagination.total)}
+            </span>{" "}
+            of <span className="font-medium">{pagination.total}</span> results
+          </p>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <span className="text-sm text-gray-700 mr-2">Rows:</span>
+            <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(Number(value))}>
+              <SelectTrigger className="w-16 h-8 text-sm">
+                <SelectValue placeholder="10" />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 25, 50, 100].map(size => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <nav className="relative z-0 inline-flex shadow-sm -space-x-px" aria-label="Pagination">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-l-md"
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={!pagination.hasPrevPage}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            {/* Pagination numbers, simplified for smaller screens */}
+            <div className="flex items-center">
+              {[...Array(pagination.totalPages)].map((_, i) => {
+                const pageNumber = i + 1;
+                // Show fewer pages on small screens
+                const maxVisiblePages = window.innerWidth < 640 ? 3 : 5;
+                
+                if (
+                  pageNumber === 1 ||
+                  pageNumber === pagination.totalPages ||
+                  Math.abs(pageNumber - pagination.currentPage) <= (maxVisiblePages - 3) / 2
+                ) {
+                  return (
+                    <Button
+                      key={pageNumber}
+                      variant={pageNumber === pagination.currentPage ? "default" : "outline"}
+                      size="icon"
+                      className="h-8 w-8 rounded-none"
+                      onClick={() => handlePageChange(pageNumber)}
+                    >
+                      {pageNumber}
+                    </Button>
+                  );
+                } else if (
+                  (pageNumber === 2 && pagination.currentPage > (maxVisiblePages - 1) / 2 + 1) ||
+                  (pageNumber === pagination.totalPages - 1 && pagination.currentPage < pagination.totalPages - (maxVisiblePages - 1) / 2)
+                ) {
+                  return (
+                    <Button
+                      key={`ellipsis-${pageNumber}`}
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-none pointer-events-none"
+                      disabled
+                    >
+                      ...
+                    </Button>
+                  );
+                }
+                return null;
+              })}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-r-md"
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={!pagination.hasNextPage}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <Layout>
-      <div className="space-y-6 container mx-auto py-6 px-4 md:px-6 max-w-7xl">
-        <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center">
+      <div className="space-y-4 container mx-auto py-4 px-3 md:py-6 md:px-6 max-w-7xl">
+        {/* Header with responsive layout */}
+        <div className="flex flex-col space-y-3 md:flex-row md:justify-between md:items-center">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Projects</h1>
-            <p className="text-muted-foreground mt-1">Manage and track your data analysis projects</p>
+            <h1 className="text-xl md:text-3xl font-bold tracking-tight">Projects</h1>
+            <p className="text-muted-foreground text-sm md:text-base mt-1">Manage and track your data analysis projects</p>
           </div>
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Create New Project
           </Button>
         </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Project Statistics</CardTitle>
-            <CardDescription>Overview of your project portfolio</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="flex items-center p-4 bg-blue-50 rounded-lg">
-                <div className="bg-blue-100 p-3 rounded-full mr-4">
-                  <FileSpreadsheet className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Projects</p>
-                  <p className="text-2xl font-bold">{pagination.total || 0}</p>
-                </div>
+        {/* Stats Cards with hover effects */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleStatusFilterFromCard('All')}>
+            <CardContent className="flex items-center p-3 md:p-4">
+              <div className="bg-blue-100 p-2 md:p-3 rounded-full mr-3">
+                <FileSpreadsheet className="h-4 w-4 md:h-6 md:w-6 text-blue-600" />
               </div>
-              <div className="flex items-center p-4 bg-green-50 rounded-lg">
-                <div className="bg-green-100 p-3 rounded-full mr-4">
-                  <Activity className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Active</p>
-                  <p className="text-2xl font-bold">{projectStats.active}</p>
-                </div>
+              <div>
+                <p className="text-xs md:text-sm text-muted-foreground">Total Projects</p>
+                <p className="text-lg md:text-2xl font-bold">{projectStats.total}</p>
               </div>
-              <div className="flex items-center p-4 bg-blue-50 rounded-lg">
-                <div className="bg-blue-100 p-3 rounded-full mr-4">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold">{projectStats.completed}</p>
-                </div>
+            </CardContent>
+          </Card>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleStatusFilterFromCard('active')}>
+            <CardContent className="flex items-center p-3 md:p-4">
+              <div className="bg-green-100 p-2 md:p-3 rounded-full mr-3">
+                <Activity className="h-4 w-4 md:h-6 md:w-6 text-green-600" />
               </div>
-              <div className="flex items-center p-4 bg-yellow-50 rounded-lg">
-                <div className="bg-yellow-100 p-3 rounded-full mr-4">
-                  <AlertCircle className="h-6 w-6 text-yellow-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending/Other</p>
-                  <p className="text-2xl font-bold">{projectStats.other}</p>
-                </div>
+              <div>
+                <p className="text-xs md:text-sm text-muted-foreground">Active</p>
+                <p className="text-lg md:text-2xl font-bold">{projectStats.active}</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleStatusFilterFromCard('completed')}>
+            <CardContent className="flex items-center p-3 md:p-4">
+              <div className="bg-blue-100 p-2 md:p-3 rounded-full mr-3">
+                <Clock className="h-4 w-4 md:h-6 md:w-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs md:text-sm text-muted-foreground">Completed</p>
+                <p className="text-lg md:text-2xl font-bold">{projectStats.completed}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleStatusFilterFromCard('pending')}>
+            <CardContent className="flex items-center p-3 md:p-4">
+              <div className="bg-yellow-100 p-2 md:p-3 rounded-full mr-3">
+                <AlertCircle className="h-4 w-4 md:h-6 md:w-6 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-xs md:text-sm text-muted-foreground">Pending/Other</p>
+                <p className="text-lg md:text-2xl font-bold">{projectStats.other}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
+        {/* Search and Filter Controls */}
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="relative w-full md:w-80">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -222,9 +433,10 @@ const Projects = () => {
           <div className="flex gap-2 w-full md:w-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full md:w-auto">
+                <Button variant="outline" className="flex-1 md:flex-none">
                   <Filter className="mr-2 h-4 w-4" />
-                  Status: {statusFilter}
+                  <span className="md:hidden">Filter</span>
+                  <span className="hidden md:inline">Status: {statusFilter}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -247,192 +459,156 @@ const Projects = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Toggle between table and card views */}
+            <Tabs value={activeView} onValueChange={setActiveView} className="flex-1 md:w-auto">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="table">Table</TabsTrigger>
+                <TabsTrigger value="cards">Cards</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </div>
 
-        <div className="rounded-md border shadow-sm">
+        {/* Content area with loading state */}
+        <div className="rounded-md border shadow-sm min-h-[300px]"> 
           {loading ? (
-            <div className="flex justify-center items-center p-12">
+            <div className="flex flex-col justify-center items-center p-12">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <span className="ml-2 text-lg text-muted-foreground">Loading projects...</span>
+              <span className="mt-2 text-sm md:text-base text-muted-foreground">Loading projects...</span>
             </div>
           ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="font-medium">
-                      <div className="flex items-center">
-                        Project Name
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="font-medium">Code</TableHead>
-                    <TableHead className="font-medium">Status</TableHead>
-                    <TableHead className="font-medium">
-                      <div className="flex items-center">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Created
-                      </div>
-                    </TableHead>
-                    <TableHead className="font-medium">Orders</TableHead>
-                    <TableHead className="font-medium">Total Cost</TableHead>
-                    <TableHead className="text-right font-medium">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {projects.length > 0 ? (
-                    projects.map((project) => (
-                      <TableRow key={project.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{project.projectName}</TableCell>
-                        <TableCell className="font-medium">{project.id}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(project.status)}>
-                            {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{formatDate(project.createdAt)}</TableCell>
-                        <TableCell>{project.totalOrders}</TableCell>
-                        <TableCell>${parseFloat(project.totalCost).toFixed(2)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-8 w-8"
-                              onClick={() => handleEditProject(project.id)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+            <Tabs value={activeView} className="w-full">
+              <TabsContent value="table" className="mt-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-medium">
+                          <div className="flex items-center">
+                            Project Name
+                            <ArrowUpDown className="ml-2 h-4 w-4" />
                           </div>
-                        </TableCell>
+                        </TableHead>
+                        <TableHead className="font-medium hidden md:table-cell">Code</TableHead>
+                        <TableHead className="font-medium">Status</TableHead>
+                        <TableHead className="font-medium hidden md:table-cell">
+                          <div className="flex items-center">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            Created
+                          </div>
+                        </TableHead>
+                        <TableHead className="font-medium hidden md:table-cell">Orders</TableHead>
+                        <TableHead className="font-medium">Total Cost</TableHead>
+                        <TableHead className="text-right font-medium">Actions</TableHead>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        No projects found. Try changing your search or filter criteria.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {projects.length > 0 ? (
+                        projects.map((project) => (
+                          <TableRow key={project.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium">{project.projectName}</TableCell>
+                            <TableCell className="font-medium hidden md:table-cell">{project.id}</TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(project.status)}>
+                                {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground hidden md:table-cell">{formatDate(project.createdAt)}</TableCell>
+                            <TableCell className="hidden md:table-cell">{project.totalOrders}</TableCell>
+                            <TableCell>${parseFloat(project.totalCost).toFixed(2)}</TableCell>
+                            <TableCell className="text-right">
+                              {/* Dropdown for mobile, buttons for desktop */}
+                              <div className="md:hidden">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEditProject(project.id)}>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      View
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-red-600">
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                              
+                              {/* Desktop actions */}
+                              <div className="hidden md:flex justify-end gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="icon" 
+                                  className="h-8 w-8"
+                                  onClick={() => handleEditProject(project.id)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" className="h-8 w-8">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center">
+                            <div className="flex flex-col items-center justify-center py-6 text-muted-foreground">
+                              <FileSpreadsheet className="h-8 w-8 mb-2" />
+                              <p>No projects found.</p>
+                              <p className="text-sm">Try changing your search or filter criteria.</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                {renderPagination()}
+              </TabsContent>
               
-              {/* Pagination UI */}
-              <div className="flex items-center justify-between px-4 py-3 border-t">
-                <div className="flex flex-1 justify-between sm:hidden">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handlePageChange(pagination.currentPage - 1)}
-                    disabled={!pagination.hasPrevPage}
-                  >
-                    Previous
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handlePageChange(pagination.currentPage + 1)}
-                    disabled={!pagination.hasNextPage}
-                  >
-                    Next
-                  </Button>
-                </div>
-                
-                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Showing <span className="font-medium">{projects.length > 0 ? ((pagination.currentPage - 1) * pagination.limit) + 1 : 0}</span> to{" "}
-                      <span className="font-medium">
-                        {Math.min(pagination.currentPage * pagination.limit, pagination.total)}
-                      </span>{" "}
-                      of <span className="font-medium">{pagination.total}</span> results
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center">
-                      <span className="text-sm text-gray-700 mr-2">Rows per page:</span>
-                      <select
-                        className="p-1 text-sm border rounded-md bg-white"
-                        value={pageSize}
-                        onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                      >
-                        {[10, 25, 50, 100].map(size => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
+              {/* Card View for Projects - Better for mobile */}
+              <TabsContent value="cards" className="mt-0">
+                {projects.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+                      {projects.map((project) => (
+                        <ProjectCard key={project.id} project={project} />
+                      ))}
                     </div>
-                    
-                    <nav className="relative z-0 inline-flex shadow-sm -space-x-px" aria-label="Pagination">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-l-md"
-                        onClick={() => handlePageChange(pagination.currentPage - 1)}
-                        disabled={!pagination.hasPrevPage}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      
-                      {/* Simplified pagination numbers */}
-                      <div className="flex items-center">
-                        {[...Array(pagination.totalPages)].map((_, i) => {
-                          const pageNumber = i + 1;
-                          // Only show current page, first page, last page, and one page before and after current
-                          if (
-                            pageNumber === 1 ||
-                            pageNumber === pagination.totalPages ||
-                            Math.abs(pageNumber - pagination.currentPage) <= 1
-                          ) {
-                            return (
-                              <Button
-                                key={pageNumber}
-                                variant={pageNumber === pagination.currentPage ? "default" : "outline"}
-                                size="icon"
-                                className="h-8 w-8 rounded-none"
-                                onClick={() => handlePageChange(pageNumber)}
-                              >
-                                {pageNumber}
-                              </Button>
-                            );
-                          } else if (
-                            pageNumber === pagination.currentPage - 2 ||
-                            pageNumber === pagination.currentPage + 2
-                          ) {
-                            return (
-                              <Button
-                                key={pageNumber}
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 rounded-none pointer-events-none"
-                                disabled
-                              >
-                                ...
-                              </Button>
-                            );
-                          }
-                          return null;
-                        })}
-                      </div>
-                      
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-r-md"
-                        onClick={() => handlePageChange(pagination.currentPage + 1)}
-                        disabled={!pagination.hasNextPage}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </nav>
+                    {renderPagination()}
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <FileSpreadsheet className="h-12 w-12 mb-4" />
+                    <p className="text-lg">No projects found.</p>
+                    <p>Try changing your search or filter criteria.</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setIsCreateDialogOpen(true)}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Create New Project
+                    </Button>
                   </div>
-                </div>
-              </div>
-            </>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </div>
