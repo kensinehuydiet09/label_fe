@@ -14,6 +14,13 @@ const Constants = {
 
     ADMIN_GET_USERS: "/admin/users",
     ADMIN_GET_USER_BY_ID: "/admin/user",
+
+    ADMIN_GET_SETTINGS: "/admin/settings",
+    ADMIN_GET_SETTING_BY_ID: "/admin/setting",
+    ADMIN_UPDATE_SETTING: "/admin/setting",
+    ADMIN_DELETE_SETTING: "/admin/setting",
+    
+
     PRODUCTS: "/products",
   },
 
