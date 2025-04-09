@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import {
   Table,
@@ -9,17 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
   Pencil, 
   Trash2, 
@@ -31,7 +21,10 @@ import {
   Calendar,
   Activity,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -50,79 +43,93 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CreateProjectDialog } from '@/components/project/CreateProjectDialog';
+import { apiService } from '@/services/api';
+import Constants from '@/constants';
 
 const Projects = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  
-  const projects = [
-    { 
-      id: 1, 
-      name: "Data Analytics Dashboard", 
-      status: "Active", 
-      date: "2024-04-08",
-      progress: 75,
-      owner: "John Doe",
-      lastUpdated: "2 hours ago"
-    },
-    { 
-      id: 2, 
-      name: "Customer Feedback Analysis", 
-      status: "Completed", 
-      date: "2024-04-07",
-      progress: 100,
-      owner: "Jane Smith",
-      lastUpdated: "Yesterday"
-    },
-    { 
-      id: 3, 
-      name: "Market Research Report", 
-      status: "Active", 
-      date: "2024-04-06",
-      progress: 45,
-      owner: "Alex Johnson",
-      lastUpdated: "3 days ago"
-    },
-    { 
-      id: 4, 
-      name: "Product Survey Results", 
-      status: "On Hold", 
-      date: "2024-04-05",
-      progress: 30,
-      owner: "Sarah Williams",
-      lastUpdated: "1 week ago"
-    },
-    { 
-      id: 5, 
-      name: "Quarterly Sales Analysis", 
-      status: "Draft", 
-      date: "2024-04-04",
-      progress: 15,
-      owner: "Michael Brown",
-      lastUpdated: "2 days ago"
-    },
-  ];
-
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          project.owner.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || project.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    currentPage: 1,
+    totalPages: 1,
+    limit: 10,
+    hasNextPage: false,
+    hasPrevPage: false
   });
+  const [pageSize, setPageSize] = useState(10);
+
+  const fetchProjects = async (page = 1, limit = pageSize) => {
+    setLoading(true);
+    try {
+      const response = await apiService.get(
+        `${Constants.API_ENDPOINTS.USER_GET_PROJECT}?page=${page}&limit=${limit}`
+      );
+      
+      if (response.success) {
+        setProjects(response.data.shipments);
+        setPagination(response.data.pagination);
+      } else {
+        setProjects([]);
+        console.error("Failed to fetch projects:", response.message);
+      }
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects(1, pageSize);
+  }, [pageSize]); 
+
+  const handlePageChange = (newPage) => {
+    fetchProjects(newPage, pageSize);
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+  };
 
   const getStatusColor = (status) => {
     switch(status) {
-      case 'Active': return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'Completed': return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-      case 'On Hold': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-      case 'Draft': return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+      case 'active': return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'completed': return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+      case 'on_hold': return 'bg-orange-100 text-orange-800 hover:bg-orange-200';
+      case 'draft': return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const handleCreateDialogClose = () => {
     setIsCreateDialogOpen(false);
+    fetchProjects(1, pageSize); // Refresh data after creating new project
+  };
+
+  // Tính toán các thống kê dự án
+  const projectStats = {
+    total: projects.length,
+    active: projects.filter(p => p.status === 'active').length,
+    completed: projects.filter(p => p.status === 'completed').length,
+    other: projects.filter(p => !['active', 'completed'].includes(p.status)).length
   };
 
   return (
@@ -155,7 +162,7 @@ const Projects = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Projects</p>
-                  <p className="text-2xl font-bold">{projects.length}</p>
+                  <p className="text-2xl font-bold">{pagination.total || 0}</p>
                 </div>
               </div>
               <div className="flex items-center p-4 bg-green-50 rounded-lg">
@@ -164,7 +171,7 @@ const Projects = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Active</p>
-                  <p className="text-2xl font-bold">{projects.filter(p => p.status === 'Active').length}</p>
+                  <p className="text-2xl font-bold">{projectStats.active}</p>
                 </div>
               </div>
               <div className="flex items-center p-4 bg-blue-50 rounded-lg">
@@ -173,7 +180,7 @@ const Projects = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold">{projects.filter(p => p.status === 'Completed').length}</p>
+                  <p className="text-2xl font-bold">{projectStats.completed}</p>
                 </div>
               </div>
               <div className="flex items-center p-4 bg-yellow-50 rounded-lg">
@@ -181,8 +188,8 @@ const Projects = () => {
                   <AlertCircle className="h-6 w-6 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">On Hold/Draft</p>
-                  <p className="text-2xl font-bold">{projects.filter(p => p.status === 'On Hold' || p.status === 'Draft').length}</p>
+                  <p className="text-sm text-muted-foreground">Pending/Other</p>
+                  <p className="text-2xl font-bold">{projectStats.other}</p>
                 </div>
               </div>
             </div>
@@ -193,7 +200,7 @@ const Projects = () => {
           <div className="relative w-full md:w-80">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search projects or owners..." 
+              placeholder="Search projects..." 
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -213,17 +220,17 @@ const Projects = () => {
                 <DropdownMenuItem onClick={() => setStatusFilter('All')}>
                   All
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter('Active')}>
+                <DropdownMenuItem onClick={() => setStatusFilter('active')}>
                   Active
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter('Completed')}>
+                <DropdownMenuItem onClick={() => setStatusFilter('completed')}>
                   Completed
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter('On Hold')}>
-                  On Hold
+                <DropdownMenuItem onClick={() => setStatusFilter('pending')}>
+                  Pending
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStatusFilter('Draft')}>
-                  Draft
+                <DropdownMenuItem onClick={() => setStatusFilter('on_hold')}>
+                  On Hold
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -231,137 +238,182 @@ const Projects = () => {
         </div>
 
         <div className="rounded-md border shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="font-medium">
-                  <div className="flex items-center">
-                    Project Name
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </div>
-                </TableHead>
-                <TableHead className="font-medium">Status</TableHead>
-                <TableHead className="font-medium">
-                  <div className="flex items-center">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Created
-                  </div>
-                </TableHead>
-                <TableHead className="font-medium">Progress</TableHead>
-                <TableHead className="font-medium">Owner</TableHead>
-                <TableHead className="text-right font-medium">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProjects.length > 0 ? (
-                filteredProjects.map((project) => (
-                  <TableRow key={project.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{project.name}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(project.status)}>
-                        {project.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{project.date}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div
-                            className={`h-2.5 rounded-full ${
-                              project.progress === 100
-                                ? 'bg-green-600'
-                                : project.progress > 60
-                                ? 'bg-blue-600'
-                                : 'bg-yellow-400'
-                            }`}
-                            style={{ width: `${project.progress}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs font-medium">{project.progress}%</span>
+          {loading ? (
+            <div className="flex justify-center items-center p-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <span className="ml-2 text-lg text-muted-foreground">Loading projects...</span>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-medium">
+                      <div className="flex items-center">
+                        Project Name
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
                       </div>
-                    </TableCell>
-                    <TableCell>{project.owner}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
+                    </TableHead>
+                    <TableHead className="font-medium">Status</TableHead>
+                    <TableHead className="font-medium">
+                      <div className="flex items-center">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Created
+                      </div>
+                    </TableHead>
+                    <TableHead className="font-medium">Orders</TableHead>
+                    <TableHead className="font-medium">Total Cost</TableHead>
+                    <TableHead className="text-right font-medium">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {projects.length > 0 ? (
+                    projects.map((project) => (
+                      <TableRow key={project.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">{project.projectName}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(project.status)}>
+                            {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(project.createdAt)}</TableCell>
+                        <TableCell>{project.totalOrders}</TableCell>
+                        <TableCell>${parseFloat(project.totalCost).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
                             <Button variant="outline" size="icon" className="h-8 w-8">
                               <Pencil className="h-4 w-4" />
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Edit Project</DialogTitle>
-                              <DialogDescription>
-                                Make changes to your project here.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-name">Project Name</Label>
-                                <Input id="edit-name" defaultValue={project.name} />
-                              </div>
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-status">Status</Label>
-                                <select 
-                                  id="edit-status" 
-                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                  defaultValue={project.status}
-                                >
-                                  <option value="Active">Active</option>
-                                  <option value="Completed">Completed</option>
-                                  <option value="On Hold">On Hold</option>
-                                  <option value="Draft">Draft</option>
-                                </select>
-                              </div>
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-progress">Progress (%)</Label>
-                                <Input 
-                                  id="edit-progress" 
-                                  type="number" 
-                                  min="0" 
-                                  max="100" 
-                                  defaultValue={project.progress} 
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button type="submit">Save changes</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                        <Dialog>
-                          <DialogTrigger asChild>
                             <Button variant="outline" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Delete Project</DialogTitle>
-                              <DialogDescription>
-                                Are you sure you want to delete "{project.name}"? This action cannot be undone.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter className="gap-2 sm:justify-start">
-                              <Button variant="ghost">Cancel</Button>
-                              <Button variant="destructive">Delete Project</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        No projects found. Try changing your search or filter criteria.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              
+              {/* Pagination UI */}
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <div className="flex flex-1 justify-between sm:hidden">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                    disabled={!pagination.hasPrevPage}
+                  >
+                    Previous
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                    disabled={!pagination.hasNextPage}
+                  >
+                    Next
+                  </Button>
+                </div>
+                
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing <span className="font-medium">{projects.length > 0 ? ((pagination.currentPage - 1) * pagination.limit) + 1 : 0}</span> to{" "}
+                      <span className="font-medium">
+                        {Math.min(pagination.currentPage * pagination.limit, pagination.total)}
+                      </span>{" "}
+                      of <span className="font-medium">{pagination.total}</span> results
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center">
+                      <span className="text-sm text-gray-700 mr-2">Rows per page:</span>
+                      <select
+                        className="p-1 text-sm border rounded-md bg-white"
+                        value={pageSize}
+                        onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                      >
+                        {[10, 25, 50, 100].map(size => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <nav className="relative z-0 inline-flex shadow-sm -space-x-px" aria-label="Pagination">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-l-md"
+                        onClick={() => handlePageChange(pagination.currentPage - 1)}
+                        disabled={!pagination.hasPrevPage}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      
+                      {/* Simplified pagination numbers */}
+                      <div className="flex items-center">
+                        {[...Array(pagination.totalPages)].map((_, i) => {
+                          const pageNumber = i + 1;
+                          // Only show current page, first page, last page, and one page before and after current
+                          if (
+                            pageNumber === 1 ||
+                            pageNumber === pagination.totalPages ||
+                            Math.abs(pageNumber - pagination.currentPage) <= 1
+                          ) {
+                            return (
+                              <Button
+                                key={pageNumber}
+                                variant={pageNumber === pagination.currentPage ? "default" : "outline"}
+                                size="icon"
+                                className="h-8 w-8 rounded-none"
+                                onClick={() => handlePageChange(pageNumber)}
+                              >
+                                {pageNumber}
+                              </Button>
+                            );
+                          } else if (
+                            pageNumber === pagination.currentPage - 2 ||
+                            pageNumber === pagination.currentPage + 2
+                          ) {
+                            return (
+                              <Button
+                                key={pageNumber}
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-none pointer-events-none"
+                                disabled
+                              >
+                                ...
+                              </Button>
+                            );
+                          }
+                          return null;
+                        })}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
-                    No projects found. Try changing your search or filter criteria.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                      
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-r-md"
+                        onClick={() => handlePageChange(pagination.currentPage + 1)}
+                        disabled={!pagination.hasNextPage}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
       
