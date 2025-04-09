@@ -35,7 +35,7 @@ const Sidebar = () => {
   const location = useLocation();
 
   return (
-    <div className="h-full w-full bg-background">
+    <div className="h-full w-full bg-background ">
       <div className="flex h-16 items-center border-b px-4">
         <span className="text-lg font-semibold">Menu</span>
       </div>
