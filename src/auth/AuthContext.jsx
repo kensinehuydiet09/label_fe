@@ -176,22 +176,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Đăng xuất
-  const handleLogout = useCallback(async () => {
-    try {
-      // Nếu có access token, thử gọi API logout
-      if (accessToken) {
-        await api.post("/auth/logout").catch(() => {
-          // Ignore API errors during logout
-        });
-      }
-    } finally {
-      // Xóa token và user state
-      setCurrentUser(null);
-      setAccessToken(null);
-      setRefreshToken(null);
-      setTokenData(null);
-    }
-  }, [accessToken]);
+  const handleLogout = useCallback(() => {
+    // Xóa token và user state
+    setCurrentUser(null);
+    setAccessToken(null);
+    setRefreshToken(null);
+    setTokenData(null);
+    
+    // Xóa dữ liệu khỏi localStorage
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    
+    console.log("Logout successful");
+  }, []);
 
   // Rename để tránh conflict với hàm callback
   const logout = handleLogout;

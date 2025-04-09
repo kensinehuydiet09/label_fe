@@ -8,8 +8,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserCircle, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuth } from "@/auth/AuthContext";
 
 const Header = ({ onMenuClick }) => {
+  const { logout } = useAuth();
+  
   return (
     <header className="border-b shadow-sm">
       <div className="flex h-16 items-center px-4 justify-between">
@@ -38,9 +41,9 @@ const Header = ({ onMenuClick }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem >Profile</DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem onClick={logout} className="text-red-600">
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

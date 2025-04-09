@@ -1,10 +1,11 @@
+import Layout from '@/components/layout/Layout';
 import React from 'react';
 
 const Priceing = () => {
     return (
-        <div>
+        <Layout>
             
-        </div>
+        </Layout>
     );
 };
 

@@ -1,10 +1,11 @@
+import Layout from '@/components/layout/Layout';
 import React from 'react';
 
 const ManagerProject = () => {
     return (
-        <div>
+        <Layout>
             manager project
-        </div>
+        </Layout>
     );
 };
 
