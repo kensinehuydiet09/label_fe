@@ -43,11 +43,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CreateProjectDialog } from '@/components/project/CreateProjectDialog';
+import { EditProjectDialog } from '@/components/project/EditProjectDialog';
 import { apiService } from '@/services/api';
 import Constants from '@/constants';
 
 const Projects = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [projects, setProjects] = useState([]);
@@ -124,7 +127,17 @@ const Projects = () => {
     fetchProjects(1, pageSize); // Refresh data after creating new project
   };
 
-  // Tính toán các thống kê dự án
+  const handleEditProject = (projectId) => {
+    setSelectedProjectId(projectId);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditDialogClose = () => {
+    setIsEditDialogOpen(false);
+    fetchProjects(pagination.currentPage, pageSize); // Refresh data after editing
+  };
+
+  // Calculate project statistics
   const projectStats = {
     total: projects.length,
     active: projects.filter(p => p.status === 'active').length,
@@ -254,6 +267,7 @@ const Projects = () => {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                       </div>
                     </TableHead>
+                    <TableHead className="font-medium">Code</TableHead>
                     <TableHead className="font-medium">Status</TableHead>
                     <TableHead className="font-medium">
                       <div className="flex items-center">
@@ -271,6 +285,7 @@ const Projects = () => {
                     projects.map((project) => (
                       <TableRow key={project.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{project.projectName}</TableCell>
+                        <TableCell className="font-medium">{project.id}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(project.status)}>
                             {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
@@ -281,7 +296,12 @@ const Projects = () => {
                         <TableCell>${parseFloat(project.totalCost).toFixed(2)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="icon" className="h-8 w-8">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => handleEditProject(project.id)}
+                            >
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button variant="outline" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
@@ -418,6 +438,11 @@ const Projects = () => {
       </div>
       
       <CreateProjectDialog open={isCreateDialogOpen} onClose={handleCreateDialogClose} />
+      <EditProjectDialog 
+        open={isEditDialogOpen} 
+        projectId={selectedProjectId}
+        onClose={handleEditDialogClose} 
+      />
     </Layout>
   );
 };

@@ -10,6 +10,7 @@ const Constants = {
     UPLOAD_FILE: "/user/upload",
     CREATE_PROJECT : "/user/shipments",
     USER_GET_PROJECT : "/user/shipments",
+    USER_GET_PROJECT_BY_ID : "/user/shipment",
     PRODUCTS: "/products",
   },
 
