@@ -146,7 +146,7 @@ const Setting = () => {
                 await apiService.put(`${Constants.API_ENDPOINTS.ADMIN_UPDATE_SETTING}/${editingItem.id}`, formData);
                 toast.success('Setting updated successfully');
             } else {
-                await apiService.post('api/admin/setting', formData);
+                await apiService.post(`${Constants.API_ENDPOINTS.ADMIN_CREATE_SETTING}`, formData);
                 toast.success('Setting created successfully');
             }
             setIsOpenDialog(false);
