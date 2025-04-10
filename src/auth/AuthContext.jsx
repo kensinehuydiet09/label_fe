@@ -72,7 +72,6 @@ export const AuthProvider = ({ children }) => {
 
   // Refresh token function
   const refreshAccessToken = useCallback(async () => {
-    console.log("Refreshing access token...");
     try {
       if (!refreshToken) {
         throw new Error("No refresh token available");
@@ -81,13 +80,11 @@ export const AuthProvider = ({ children }) => {
       const response = await apiService.post(Constants.API_ENDPOINTS.REFRESH_TOKEN, {
         refreshToken,
       });
-      console.log("🚀 ~ refreshAccessToken ~ response:", response)
 
       if (!response.data.accessToken) {
         throw new Error("No access token received from server");
       }
       
-      console.log("Token refreshed successfully");
       setAccessToken(response.data.accessToken);
 
       // Tùy API, có thể server trả về refreshToken mới
@@ -132,7 +129,6 @@ export const AuthProvider = ({ children }) => {
     console.log(`Will refresh token in ${refreshTime/1000} seconds`);
     
     refreshTimerRef.current = setTimeout(() => {
-      console.log("Timer triggered, refreshing token now");
       refreshAccessToken().catch(err => {
         console.error("Timer-triggered refresh failed:", err);
       });
@@ -201,8 +197,9 @@ export const AuthProvider = ({ children }) => {
         const userData = {
           id: decoded.sub || decoded.id,
           email: decoded.email,
-          name: decoded.name,
+          name: decoded.username,
           role: decoded.role || [],
+          isActive: decoded.isActive || true,
           permissions: decoded.permissions || [],
         };
 
@@ -274,12 +271,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Đăng ký
-  const register = async (email, password, name) => {
+  const register = async (email, password, username) => {
     try {
       const { data } = await api.post(Constants.API_ENDPOINTS.REGISTER, {
         email,
         password,
-        name,
+        username,
       });
       return data;
     } catch (error) {

@@ -364,7 +364,7 @@ const Projects = () => {
           </div>
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto"
+            className=" w-full md:w-auto"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Create New Project
@@ -553,9 +553,6 @@ const Projects = () => {
                                   onClick={() => handleEditProject(project.id)}
                                 >
                                   <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="icon" className="h-8 w-8">
-                                  <Eye className="h-4 w-4" />
                                 </Button>
                                 <Button variant="outline" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50">
                                   <Trash2 className="h-4 w-4" />
