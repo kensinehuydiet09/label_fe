@@ -24,6 +24,11 @@ const Constants = {
     ADMIN_DELETE_SETTING: "/admin/setting",
     ADMIN_CREATE_SETTING: "/admin/setting",
     
+    ADMIN_GET_SHIPMENTS: '/admin/shipments',
+    ADMIN_CREATE_SHIPMENT: '/admin/shipments',
+    ADMIN_UPDATE_SHIPMENT: '/admin/shipments',  // + '/:id' để cập nhật
+    ADMIN_DELETE_SHIPMENT: '/admin/shipments',  // + '/:id' để xóa
+
 
     PRODUCTS: "/products",
   },

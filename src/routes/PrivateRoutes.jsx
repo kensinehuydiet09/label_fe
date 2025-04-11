@@ -7,22 +7,24 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import Constants from "@/constants";
 
-const PrivateRoutes = () => {
+const PrivateRoutes = ({ allowAdmin = false }) => {
   const { currentUser } = useAuth();
   const isAdmin = currentUser && currentUser.role === Constants.ROLES.ADMIN;
 
-  if (isAdmin) {
+  // Nếu là admin và không cho phép admin truy cập, chuyển hướng tới trang admin
+  if (isAdmin && !allowAdmin) {
     return <Navigate to="/admin" />;
   }
 
+  // Các routes cho user thường (và admin nếu allowAdmin = true)
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="projects/*" element={<Projects />} />
       <Route path="profile/*" element={<Profile />} />
       <Route path="deposit/*" element={<Deposit />} />
-      {/* Redirect tất cả path không hợp lệ về dashboard */}
-      <Route path="*" element={<Navigate to="/" />} />
+      {/* Chuyển hướng tất cả đường dẫn không hợp lệ về dashboard user */}
+      <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>
   );
 };

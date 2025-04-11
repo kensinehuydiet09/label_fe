@@ -16,23 +16,29 @@ const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Landing page luôn hiển thị nếu đi vào route / mà chưa đăng nhập */}
         <Route path="/" element={
           currentUser ? <Navigate to={isAdmin ? "/admin" : "/dashboard"} /> : <LandingPage />
         } />
         
+        {/* Routes phân quyền cho authentication */}
         <Route path="/auth/*" element={
           currentUser ? <Navigate to={isAdmin ? "/admin" : "/dashboard"} /> : <AuthPage />
         } />
         
+        {/* Dashboard cho cả user thường và admin */}
         <Route path="/dashboard/*" element={
-          currentUser ? <PrivateRoutes /> : <Navigate to="/auth/login" />
+          currentUser ? <PrivateRoutes allowAdmin={true} /> : <Navigate to="/auth/login" />
         } />
 
+        {/* Admin routes chỉ dành cho admin */}
         <Route path="/admin/*" element={
-          isAdmin ? <AdminRoutes /> : <Navigate to="/dashboard" />
+          isAdmin ? <AdminRoutes /> : 
+          (currentUser ? <Navigate to="/dashboard" /> : <Navigate to="/auth/login" />)
         } />
         
-        <Route path="/*" element={
+        {/* Fallback cho các routes không hợp lệ */}
+        <Route path="*" element={
           currentUser ? <Navigate to={isAdmin ? "/admin" : "/dashboard"} /> : <Navigate to="/" />
         } />
       </Routes>
