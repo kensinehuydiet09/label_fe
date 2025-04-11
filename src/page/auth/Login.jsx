@@ -1,7 +1,15 @@
 import React, { useState } from "react";
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
+import AuthLayout from "./AuthLayout";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { 
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -11,26 +19,21 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { login } = useAuth(); 
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
-      setError(""); // Reset error message
-      setLoading(true); // Set loading state
-      
-      // Gọi function login từ AuthContext
+      setError("");
+      setLoading(true);
+
       const results = await login(email, password);
-      
-      // Nếu login thành công, navigate đến trang dashboard
       navigate("/dashboard");
     } catch (err) {
       console.error("Login failed:", err);
-      
-      // Xử lý lỗi từ API và hiển thị thông báo phù hợp
+
       if (err.response) {
-        // Lỗi từ server với response
         switch (err.response.status) {
           case 401:
             setError("Incorrect email or password. Please try again.");
@@ -45,14 +48,12 @@ const Login = () => {
             setError("Login failed. Please try again later.");
         }
       } else if (err.request) {
-        // Không nhận được response
         setError("Cannot connect to server. Please check your internet connection.");
       } else {
-        // Lỗi khởi tạo request
         setError("Something went wrong. Please try again.");
       }
     } finally {
-      setLoading(false); // Reset loading state
+      setLoading(false);
     }
   };
 
@@ -61,124 +62,118 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Main Content */}
-      <main className="flex-grow mt-52 flex justify-center px-4 py-8">
-        <div className="w-full max-w-md">
-          {/* Logo */}
-          <div className="mb-8 text-center">
-            <div className="mx-auto w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">LV</span>
-            </div>
-            <h2 className="mt-4 text-2xl font-bold text-gray-900">
-              Label Vaults
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Sign in to continue to Label Vaults
-            </p>
-          </div>
-
-          {/* Form */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            {/* Error message display */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-md">
-                {error}
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit}>
-              {/* Email field */}
-              <div className="mb-4">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Email
-                </label>
-                <input
+    <AuthLayout 
+      title="Sign In to Label Vaults" 
+      subtitle="Enter your credentials to access your account"
+    >
+      <Card className="border border-gray-200 shadow-lg">
+        <CardContent className="pt-6 px-6 pb-8">
+          {error && (
+            <Alert variant="destructive" className="mb-6 text-sm bg-red-50 border border-red-200">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <Mail size={16} className="text-gray-400" />
+                </div>
+                <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your email"
+                  className="pl-10 py-5 border-gray-300 bg-gray-50 focus:ring-2 focus:ring-purple-600 focus:border-purple-600"
+                  placeholder="name@company.com"
                   required
                   disabled={loading}
                 />
               </div>
+            </div>
 
-              {/* Password field */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-1">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Password
-                  </label>
-                  <a
-                    href="#"
-                    className="text-sm text-blue-600 hover:text-blue-800"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate("/forgot-password");
-                    }}
-                  >
-                    Forgot password?
-                  </a>
-                </div>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter your password"
-                    required
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-2.5 text-gray-500"
-                    onClick={togglePasswordVisibility}
-                    disabled={loading}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Password
+                </label>
+                <span
+                  className="text-sm text-purple-700 hover:text-purple-900 cursor-pointer font-medium"
+                  onClick={() => navigate("/forgot-password")}
+                >
+                  Forgot password?
+                </span>
               </div>
-              {/* Submit button */}
-              <button
-                type="submit"
-                className={`w-full text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  loading 
-                    ? "bg-blue-400 cursor-not-allowed" 
-                    : "bg-blue-600 hover:bg-blue-700"
-                }`}
-                disabled={loading}
-              >
-                {loading ? "Signing In..." : "Sign In"}
-              </button>
-            </form>
-          </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <Lock size={16} className="text-gray-400" />
+                </div>
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 py-5 pr-10 border-gray-300 bg-gray-50 focus:ring-2 focus:ring-purple-600 focus:border-purple-600"
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                  onClick={togglePasswordVisibility}
+                  disabled={loading}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
 
-          {/* Sign up link */}
-          <div className="mt-6 text-center">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                Remember me
+              </label>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full py-6 bg-purple-700 hover:bg-purple-800 text-white font-medium"
+              disabled={loading}
+            >
+              {loading ? "Signing In..." : "Sign In"}
+            </Button>
+          </form>
+          
+          <div className="mt-8 pt-6 text-center border-t border-gray-200">
             <p className="text-gray-600">
               Don't have an account?{" "}
               <span
                 onClick={() => navigate("/auth/register")}
-                className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                className="text-orange-600 hover:text-orange-700 font-medium cursor-pointer"
               >
-                Sign up
+                Create an account
               </span>
             </p>
           </div>
-        </div>
-      </main>
-    </div>
+        </CardContent>
+      </Card>
+    </AuthLayout>
   );
 };
 

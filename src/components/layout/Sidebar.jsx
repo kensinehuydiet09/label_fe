@@ -23,17 +23,17 @@ const userMenuItems = [
   {
     title: "Manage Projects",
     icon: FolderKanban,
-    path: "/projects",
+    path: "/dashboard/projects",
   },
   {
     title: "Profile",
     icon: UserCircle,
-    path: "/profile",
+    path: "/dashboard/profile",
   },
   {
     title: "Deposit",
     icon: Wallet,
-    path: "/deposit",
+    path: "/dashboard/deposit",
   },
 ];
 

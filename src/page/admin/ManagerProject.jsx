@@ -381,8 +381,8 @@ const ManagerProject = () => {
     </div>
   );
 
-  return (
-    <Layout>
+    return (
+        <Layout>
       <div className="space-y-4 container mx-auto py-4 px-3 md:py-6 md:px-6 max-w-7xl">
         {/* Header with responsive layout */}
         <div className="flex flex-col space-y-3 md:flex-row md:justify-between md:items-center">
@@ -655,8 +655,8 @@ const ManagerProject = () => {
         projectId={selectedProjectId}
         onClose={handleEditDialogClose} 
       />
-    </Layout>
-  );
+        </Layout>
+    );
 };
 
 export default ManagerProject;
