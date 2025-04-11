@@ -57,6 +57,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import getStatusColor from '@/helper/getStatusColor';
 
 const Projects = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -131,17 +132,6 @@ const Projects = () => {
     setPageSize(newSize);
   };
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'active': return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'completed': return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-      case 'on_hold': return 'bg-orange-100 text-orange-800 hover:bg-orange-200';
-      case 'draft': return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -166,7 +156,7 @@ const Projects = () => {
 
   const handleEditDialogClose = () => {
     setIsEditDialogOpen(false);
-    fetchProjects(pagination.currentPage, pageSize); // Refresh data after editing
+    fetchProjects(pagination.currentPage, pageSize); 
   };
 
   // Calculate project statistics

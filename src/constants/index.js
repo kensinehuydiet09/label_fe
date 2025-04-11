@@ -11,14 +11,14 @@ const Constants = {
     CREATE_PROJECT : "/user/shipments",
     USER_GET_PROJECT : "/user/shipments",
     USER_GET_PROJECT_BY_ID : "/user/shipment",
+    USER_CHECKOUT_SESSION : "/user/create-checkout-session",
 
     ADMIN_GET_USERS: "/admin/users",
     ADMIN_GET_USER_BY_ID: "/admin/user",
     ADMIN_UPDATE_USER: "/admin/user",
     ADMIN_DELETE_USER: "/admin/user",
     ADMIN_CREATE_USER: "/admin/user",
-    ADMIN_GET_PROJECT_BY_ID : "/admin/shipment",
-    ADMIN_UPDATE_PROJECT : "/admin/shipment",
+
 
     ADMIN_GET_SETTINGS: "/admin/settings",
     ADMIN_GET_SETTING_BY_ID: "/admin/setting",
@@ -27,6 +27,7 @@ const Constants = {
     ADMIN_CREATE_SETTING: "/admin/setting",
     
     ADMIN_GET_SHIPMENTS: '/admin/shipments',
+    ADMIN_GET_SHIPMENT_BY_ID: '/admin/shipments', // + '/:id' để lấy shipment theo id
     ADMIN_CREATE_SHIPMENT: '/admin/shipments',
     ADMIN_UPDATE_SHIPMENT: '/admin/shipments',  // + '/:id' để cập nhật
     ADMIN_DELETE_SHIPMENT: '/admin/shipments',  // + '/:id' để xóa

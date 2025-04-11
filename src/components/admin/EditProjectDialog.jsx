@@ -53,7 +53,7 @@ export const EditProjectDialog = ({
   const fetchProjectDetails = async (id) => {
     setIsLoading(true);
     try {
-      const response = await apiService.get(`${Constants.API_ENDPOINTS.ADMIN_GET_PROJECT_BY_ID}/${id}`);
+      const response = await apiService.get(`${Constants.API_ENDPOINTS.ADMIN_GET_SHIPMENT_BY_ID}/${id}`);
       
       if (response.success) {
         setProjectData(response.data);
