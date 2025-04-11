@@ -27,7 +27,6 @@ import {
   Loader2,
   MoreHorizontal,
   Eye,
-  User,
   Calendar
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

@@ -54,9 +54,9 @@ const adminMenuItems = [
     path: "/admin/users",
   },
   {
-    title: "Settings",
-    icon: Settings,
-    path: "/admin/settings",
+    title: "Pricing",
+    icon: DollarSign,
+    path: "/admin/pricing",
   },
   {
     title: "Notifications",
@@ -64,9 +64,9 @@ const adminMenuItems = [
     path: "/admin/notification",
   },
   {
-    title: "Pricing",
-    icon: DollarSign,
-    path: "/admin/pricing",
+    title: "Settings",
+    icon: Settings,
+    path: "/admin/settings",
   },
 ];
 

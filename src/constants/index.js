@@ -17,6 +17,8 @@ const Constants = {
     ADMIN_UPDATE_USER: "/admin/user",
     ADMIN_DELETE_USER: "/admin/user",
     ADMIN_CREATE_USER: "/admin/user",
+    ADMIN_GET_PROJECT_BY_ID : "/admin/shipment",
+    ADMIN_UPDATE_PROJECT : "/admin/shipment",
 
     ADMIN_GET_SETTINGS: "/admin/settings",
     ADMIN_GET_SETTING_BY_ID: "/admin/setting",
@@ -29,6 +31,12 @@ const Constants = {
     ADMIN_UPDATE_SHIPMENT: '/admin/shipments',  // + '/:id' để cập nhật
     ADMIN_DELETE_SHIPMENT: '/admin/shipments',  // + '/:id' để xóa
 
+
+    ADMIN_GET_PRICES: "/admin/price",
+    ADMIN_CREATE_PRICE: "/admin/price",
+    ADMIN_UPDATE_PRICE: "/admin/price",
+    ADMIN_DELETE_PRICE: "/admin/price",
+    ADMIN_GET_PRICE_BY_ID: "/admin/price",
 
     PRODUCTS: "/products",
   },
