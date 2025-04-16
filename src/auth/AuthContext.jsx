@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }) => {
     }
     
     // Refresh token khi còn 30 giây nữa là hết hạn
-    const refreshTime = Math.max(remainingTime - 30, 0) * 1000;
+    const refreshTime = Math.max(remainingTime - 300, 0) * 1000;
     console.log(`Will refresh token in ${refreshTime/1000} seconds`);
     
     refreshTimerRef.current = setTimeout(() => {

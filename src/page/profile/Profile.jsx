@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import {
   Card,
@@ -27,16 +27,20 @@ import {
   MessageSquare,
   CheckCircle,
   XCircle,
+  Info,
 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/auth/AuthContext";
 import useFormattedMonthYear from "@/hooks/useFormattedMonthYear";
 import { capitalizeFirst } from "@/helper/stringHelpers";
 import { formatNumber } from "@/helper/numberFormat";
+import { apiService } from "@/services/api";
+import Constants from "@/constants";
 
 const Profile = () => {
   const { currentUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [balance, setBalance] = useState(currentUser.data.balance);
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
@@ -45,12 +49,28 @@ const Profile = () => {
   const [userInfo, setUserInfo] = useState({
     name: currentUser.data.username,
     email: currentUser.data.email,
-    telegram: "@" + currentUser.data.username, // Giả định telegram là @username
     role: capitalizeFirst(currentUser.data.role),
     memberSince: useFormattedMonthYear(currentUser.data.createdAt),
-    balance: formatNumber(currentUser.data.balance) + " USD", // Giả định thông tin balance
+    balance: formatNumber(balance) + " USD", // Giả định thông tin balance
     active: currentUser.data.active || true, // Giả định trạng thái active
   });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await apiService.get(`${Constants.API_ENDPOINTS.USER_PROFILE}`);
+        if (response.success) {
+          setBalance(response.data.balance);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+  
+    fetchUserData();
+  }, []);
+
+
 
   const [passwordInfo, setPasswordInfo] = useState({
     currentPassword: "",
@@ -65,7 +85,7 @@ const Profile = () => {
     // Here you would typically make an API call to save the changes
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     // Validate and submit password change
     if (passwordInfo.newPassword !== passwordInfo.confirmPassword) {
       alert("Passwords don't match");
@@ -78,12 +98,30 @@ const Profile = () => {
     }
 
     // API call would go here
-    alert("Password updated successfully");
-    setPasswordInfo({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
+
+    try {
+      const response = await apiService.put(
+        `${Constants.API_ENDPOINTS.USER_CHANGE_PASSWORD}`,
+        {
+          oldPassword: passwordInfo.currentPassword,
+          newPassword: passwordInfo.newPassword,
+        }
+      );
+      if (!response.success) {
+        alert("Failed to update password. Please try again.");
+        return;
+      }
+
+      alert("Password updated successfully");
+      setPasswordInfo({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      alert("An error occurred while updating the password. Please try again.");
+    }
   };
 
   const getInitials = (name) => {
@@ -232,7 +270,7 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label
                         htmlFor="telegram"
                         className="flex items-center gap-2"
@@ -256,7 +294,7 @@ const Profile = () => {
                           {userInfo.telegram}
                         </div>
                       )}
-                    </div>
+                    </div> */}
 
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
@@ -418,11 +456,26 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  <Alert className="bg-blue-50 text-blue-800 border-blue-200">
-                    <AlertDescription className="text-xs">
-                      Password should be at least 8 characters and include
-                      uppercase, lowercase, numbers, and special characters for
-                      best security.
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <AlertTitle className="text-sm font-medium text-blue-800 ml-2">
+                      Password Requirements
+                    </AlertTitle>
+                    <AlertDescription className="mt-2 ml-6 text-sm text-blue-700">
+                      <ul className="list-disc space-y-1">
+                        <li>At least 8 characters long</li>
+                        <li>Include at least one uppercase letter</li>
+                        <li>Include at least one lowercase letter</li>
+                        <li>Include at least one number</li>
+                        <li>
+                          Include at least one special character (e.g.,
+                          !@#$%^&*)
+                        </li>
+                      </ul>
+                      <p className="mt-2 text-blue-600 font-medium">
+                        Strong passwords significantly improve your account
+                        security.
+                      </p>
                     </AlertDescription>
                   </Alert>
                 </CardContent>

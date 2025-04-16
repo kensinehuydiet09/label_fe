@@ -1,6 +1,7 @@
 // src/services/api.js
 import axios from 'axios';
 import { isTokenExpired, decodeToken } from '../utils/jwtUtils';
+import { encodeData, encodeFormData, isFileOrBlob } from './encodeData';
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -49,6 +50,7 @@ const refreshAuthToken = async () => {
     const refreshToken = getRefreshToken();
     if (!refreshToken) throw new Error('No refresh token available');
     
+    // Không cần mã hóa refreshToken vì đây là dữ liệu đặc biệt
     const response = await axios.post(`${BASE_URL}/auth/refresh-token`, {
       refreshToken
     });
@@ -171,7 +173,19 @@ export const apiService = {
   
   post: async (endpoint, data = {}, options = {}) => {
     try {
-      const response = await api.post(endpoint, data, options);
+      // Mã hóa dữ liệu trước khi gửi
+      const encodedData = encodeData(data);
+      
+      // Thêm header để server biết dữ liệu đã được mã hóa
+      const enhancedOptions = {
+        ...options,
+        headers: {
+          ...options.headers,
+          'X-Encrypted-Data': 'true'
+        }
+      };
+      
+      const response = await api.post(endpoint, { data: encodedData }, enhancedOptions);
       return response.data;
     } catch (error) {
       throw error;
@@ -181,17 +195,34 @@ export const apiService = {
   postFormData: async (endpoint, data = {}, options = {}) => {
     try {
       const formData = new FormData();
+      
+      // Xử lý riêng cho FormData để không mã hóa các file
       Object.keys(data).forEach(key => {
-        formData.append(key, data[key]);
+        if (isFileOrBlob(data[key])) {
+          // Nếu là file, thêm trực tiếp vào FormData
+          formData.append(key, data[key]);
+        } else {
+          // Nếu không phải file, mã hóa và thêm vào FormData
+          const valueToEncode = typeof data[key] === 'object' 
+            ? JSON.stringify(data[key]) 
+            : String(data[key]);
+          const encodedValue = encodeData({ value: valueToEncode });
+          formData.append(key, encodedValue);
+          // Thêm flag để server biết trường này đã được mã hóa
+          formData.append(`${key}_encrypted`, 'true');
+        }
       });
       
-      const response = await api.post(endpoint, formData, {
+      const enhancedOptions = {
+        ...options,
         headers: {
           'Content-Type': 'multipart/form-data',
+          'X-Contains-Encrypted-Fields': 'true',
+          ...options.headers
         },
-        ...options,
-      });
+      };
       
+      const response = await api.post(endpoint, formData, enhancedOptions);
       return response.data;
     } catch (error) {
       throw error;
@@ -200,7 +231,19 @@ export const apiService = {
   
   put: async (endpoint, data = {}, options = {}) => {
     try {
-      const response = await api.put(endpoint, data, options);
+      // Mã hóa dữ liệu trước khi gửi
+      const encodedData = encodeData(data);
+      
+      // Thêm header để server biết dữ liệu đã được mã hóa
+      const enhancedOptions = {
+        ...options,
+        headers: {
+          ...options.headers,
+          'X-Encrypted-Data': 'true'
+        }
+      };
+      
+      const response = await api.put(endpoint, { data: encodedData }, enhancedOptions);
       return response.data;
     } catch (error) {
       throw error;
@@ -209,7 +252,19 @@ export const apiService = {
   
   patch: async (endpoint, data = {}, options = {}) => {
     try {
-      const response = await api.patch(endpoint, data, options);
+      // Mã hóa dữ liệu trước khi gửi
+      const encodedData = encodeData(data);
+      
+      // Thêm header để server biết dữ liệu đã được mã hóa
+      const enhancedOptions = {
+        ...options,
+        headers: {
+          ...options.headers,
+          'X-Encrypted-Data': 'true'
+        }
+      };
+      
+      const response = await api.patch(endpoint, { data: encodedData }, enhancedOptions);
       return response.data;
     } catch (error) {
       throw error;

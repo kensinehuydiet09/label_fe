@@ -153,7 +153,7 @@ const ManagerUser = () => {
 
   return (
     <Layout>
-      <div className="container space-y-4 p-4 md:space-y-6">
+      <div className="container space-y-4 p-4 md:space-y-6 mx-auto">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">

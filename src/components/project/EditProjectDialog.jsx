@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -17,53 +15,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Calendar,
-  FileSpreadsheet,
-  Save,
-  X,
-  Eye,
-  Pencil
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { apiService } from '@/services/api';
-import Constants from '@/constants';
+import {
+  Calendar,
+  DollarSign,
+  Package,
+  Clock,
+  FileText,
+  FileChartColumn,
+  Loader2,
+} from "lucide-react";
+import { apiService } from "@/services/api";
+import Constants from "@/constants";
+import { format } from "date-fns";
 
-export const EditProjectDialog = ({ 
-  open, 
-  projectId, 
-  onClose 
-}) => {
+export const EditProjectDialog = ({ open, projectId, onClose }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [projectData, setProjectData] = useState(null);
   const [formData, setFormData] = useState({
-    projectName: '',
-    status: '',
-    notes: ''
+    projectName: "",
+    notes: "",
+    status: "pending",
   });
+  const [labels, setLabels] = useState([]);
 
   useEffect(() => {
     if (open && projectId) {
       fetchProjectDetails(projectId);
+    } else {
+      setIsLoading(false);
     }
   }, [open, projectId]);
 
   const fetchProjectDetails = async (id) => {
     setIsLoading(true);
     try {
-      const response = await apiService.get(`${Constants.API_ENDPOINTS.USER_GET_PROJECT_BY_ID}/${id}`);
-      
-      if (response.success) {
-        setProjectData(response.data);
+      const result = await apiService.get(
+        `${Constants.API_ENDPOINTS.USER_GET_PROJECT_BY_ID}/${id}`
+      );
+
+      if (result.success) {
+        setProjectData(result.data);
         setFormData({
-          projectName: response.data.projectName || '',
-          status: response.data.status || 'pending',
-          notes: response.data.notes || ''
+          projectName: result.data.projectName || "",
+          notes: result.data.notes || "",
+          status: result.data.status || "pending",
         });
+
+        // Parse label URLs
+        const existingLabels = result.data.labelUrl
+          ? result.data.labelUrl.split(",").map((url) => ({ url: url.trim() }))
+          : [];
+        setLabels(existingLabels);
       } else {
-        console.error("Failed to fetch project details:", response.message);
+        console.error("Failed to fetch project details:", result.message);
       }
     } catch (err) {
       console.error("Error fetching project details:", err);
@@ -72,239 +78,261 @@ export const EditProjectDialog = ({
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleStatusChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      status: value
-    }));
-  };
-
-  const handleSubmit = async () => {
-    // In a real implementation, you would save the changes here
-    // Since we're focusing on the UI, we'll just close the dialog
-    onClose();
-  };
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'on_hold': return 'bg-orange-100 text-orange-800';
-      case 'draft': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      return format(new Date(dateString), "dd MMM yyyy, HH:mm");
+    } catch (e) {
+      return dateString;
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // Helper to format file name from URL
+  const getFileName = (url) => {
+    if (!url) return "N/A";
+    return url.trim();
   };
-
-  const toggleEditMode = () => {
-    setIsEditMode(!isEditMode);
-  };
-
-  if (!open) return null;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Project Details</span>
-            <div className="flex gap-2 mt-5">
-              <Button 
-                variant={isEditMode ? "outline" : "default"} 
-                size="sm" 
-                onClick={toggleEditMode}
-                disabled={isLoading}
-              >
-                {isEditMode ? (
-                  <>
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Mode
-                  </>
-                ) : (
-                  <>
-                    <Pencil className="h-4 w-4  mr-1" />
-                    Edit Mode
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogTitle>
-          <DialogDescription>
-            View or edit project information
-          </DialogDescription>
+          <DialogTitle className="text-xl font-bold">Project Details</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
-          <div className="flex justify-center items-center p-8">
-            <div className="animate-spin w-8 h-8 border-4 border-blue-600 rounded-full border-t-transparent"></div>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <span className="ml-2">Loading project data...</span>
           </div>
         ) : projectData ? (
-          <div className="space-y-4">
-            {/* View Mode */}
-            {!isEditMode && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Project ID</Label>
-                    <p className="font-medium">{projectData.id}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Status</Label>
-                    <p>
-                      <Badge className={getStatusColor(projectData.status)}>
-                        {projectData.status.charAt(0).toUpperCase() + projectData.status.slice(1)}
-                      </Badge>
-                    </p>
-                  </div>
-                </div>
+          <div className="space-y-6">
+            {/* Basic Information Section */}
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <h3 className="text-lg font-medium mb-3">Basic Information</h3>
 
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <Label className="text-sm text-muted-foreground">Project Name</Label>
-                  <p className="font-medium">{projectData.projectName}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Created At</Label>
-                    <p className="flex items-center text-sm">
-                      <Calendar className="mr-1 h-4 w-4 text-muted-foreground" />
-                      {formatDate(projectData.createdAt)}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Processed At</Label>
-                    <p className="flex items-center text-sm">
-                      <Calendar className="mr-1 h-4 w-4 text-muted-foreground" />
-                      {formatDate(projectData.processedAt)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Total Orders</Label>
-                    <p className="font-medium">{projectData.totalOrders}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Total Cost</Label>
-                    <p className="font-medium">${parseFloat(projectData.totalCost).toFixed(2)}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm text-muted-foreground">File Name</Label>
-                  <p className="flex items-center">
-                    <FileSpreadsheet className="mr-1 h-4 w-4 text-muted-foreground" />
-                    {projectData.fileName}
-                  </p>
-                </div>
-
-                <div>
-                  <Label className="text-sm text-muted-foreground">Notes</Label>
-                  <p className="text-sm p-2 bg-gray-50 rounded-md min-h-20">
-                    {projectData.notes || "No notes added."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Edit Mode */}
-            {isEditMode && (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="projectName">Project Name</Label>
-                  <Input 
-                    id="projectName"
-                    name="projectName"
-                    value={formData.projectName}
-                    onChange={handleInputChange}
+                  <Label htmlFor="id" className="flex items-center text-sm">
+                    <span className="mr-1">Project ID</span>
+                  </Label>
+                  <Input
+                    id="id"
+                    value={projectData.id || ""}
+                    disabled
+                    className="bg-gray-100"
                   />
                 </div>
-
                 <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select 
-                    value={formData.status} 
-                    onValueChange={handleStatusChange}
+                  <Label htmlFor="userId" className="flex items-center text-sm">
+                    <span className="mr-1">User ID</span>
+                  </Label>
+                  <Input
+                    id="userId"
+                    value={projectData.userId || ""}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <Label
+                  htmlFor="projectName"
+                  className="flex items-center text-sm"
+                >
+                  <span className="mr-1">Project Name</span>
+                </Label>
+                <Input
+                  id="projectName"
+                  name="projectName"
+                  value={formData.projectName}
+                  disabled
+                  className="bg-gray-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label
+                    htmlFor="fileName"
+                    className="flex items-center text-sm"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="on_hold">On Hold</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <FileText className="h-4 w-4 mr-1 text-gray-400" />
+                    <span>File Name</span>
+                  </Label>
+
+                  <a href={projectData.fileName}>
+                    <div className="bg-white text-gray-500 px-5 py-2 rounded text-sm flex items-center mt-2 hover:text-gray-700 transition-colors">
+                      <FileChartColumn className="h-4 w-4 mr-1 text-gray-400" /> 
+                      <span className="text-blue-600 hover:underline truncate flex-1">
+                        {projectData.fileName || ""}
+                      </span> 
+                    </div>
+                  </a>
                 </div>
 
                 <div>
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea 
-                    id="notes"
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    rows={5}
+                  <Label htmlFor="status" className="flex items-center text-sm">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>Status</span>
+                  </Label>
+                  <Input
+                    id="status"
+                    value={formData.status}
+                    disabled
+                    className="bg-gray-100"
                   />
                 </div>
               </div>
-            )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="totalOrders"
+                    className="flex items-center text-sm"
+                  >
+                    <Package className="h-4 w-4 mr-1" />
+                    <span>Total Orders</span>
+                  </Label>
+                  <Input
+                    id="totalOrders"
+                    value={projectData.totalOrders || "0"}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="totalCost"
+                    className="flex items-center text-sm"
+                  >
+                    <DollarSign className="h-4 w-4 mr-1" />
+                    <span>Total Cost</span>
+                  </Label>
+                  <Input
+                    id="totalCost"
+                    value={projectData.totalCost || "0.00"}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Dates Section */}
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <h3 className="text-lg font-medium mb-3">Dates</h3>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label
+                    htmlFor="createdAt"
+                    className="flex items-center text-sm"
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>Created At</span>
+                  </Label>
+                  <Input
+                    id="createdAt"
+                    value={formatDate(projectData.createdAt)}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="updatedAt"
+                    className="flex items-center text-sm"
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>Updated At</span>
+                  </Label>
+                  <Input
+                    id="updatedAt"
+                    value={formatDate(projectData.updatedAt)}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="processedAt"
+                    className="flex items-center text-sm"
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>Processed At</span>
+                  </Label>
+                  <Input
+                    id="processedAt"
+                    value={formatDate(projectData.processedAt)}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Notes Section */}
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <Label htmlFor="notes" className="text-sm mb-2 block">
+                Notes
+              </Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                rows={3}
+                className="resize-none bg-gray-100"
+                disabled
+              />
+            </div>
+
+            {/* Labels Section */}
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <h3 className="text-lg font-medium mb-3">Labels</h3>
+
+              {/* Existing Labels */}
+              {labels.length > 0 ? (
+                <div className="mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {labels.map((label, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-white p-2 rounded border"
+                      >
+                        <a
+                          href={label.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm truncate flex-1 text-blue-600 hover:underline flex items-center"
+                        >
+                          <FileText className="h-4 w-4 mr-1 text-gray-400" />
+                          {label.url}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-500 text-sm italic">No labels available</div>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="text-center p-4">
-            No project data found or an error occurred.
+          <div className="text-center py-4 text-red-500">
+            Failed to load project data
           </div>
         )}
 
         <DialogFooter>
-          {isEditMode ? (
-            <>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsEditMode(false)}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSubmit} 
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </Button>
-            </>
-          ) : (
-            <Button 
-              variant="outline" 
-              onClick={onClose}
-            >
-              Close
-            </Button>
-          )}
+          <Button
+            type="button"
+            onClick={onClose}
+          >
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import Constants from "@/constants";
 import { apiService } from "@/services/api";
+import { useAuth } from "@/auth/AuthContext";
 
 export const CreateProjectDialog = ({ open, onClose }) => {
   const [projectName, setProjectName] = useState("");
@@ -39,7 +40,24 @@ export const CreateProjectDialog = ({ open, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // "success" or "error"
   const [submitMessage, setSubmitMessage] = useState("");
+  const [balance, setBalance] = useState(0);
   const fileInputRef = useRef(null);
+  
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await apiService.get(`${Constants.API_ENDPOINTS.USER_PROFILE}`);
+        if (response.success) {
+          setBalance(response.data.balance);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+    
+    fetchUserData();
+  }, []);
+  console.log("🚀 ~ CreateProjectDialog ~ balance:", balance)
 
   const handleDragOver = (e) => {
     e.preventDefault();

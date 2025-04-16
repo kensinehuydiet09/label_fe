@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
-  DialogTrigger 
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -18,65 +15,66 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Calendar,
-  FileSpreadsheet,
-  Save,
-  X,
-  Eye,
-  Pencil,
-  FileUp,
-  File,
-  FileText
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { apiService } from '@/services/api';
-import Constants from '@/constants';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  X,
+  Upload,
+  Loader2,
+  FileText,
+  Calendar,
+  DollarSign,
+  Package,
+  Clock,
+  FileChartColumn,
+} from "lucide-react";
+import { apiService } from "@/services/api";
+import Constants from "@/constants";
+import { format } from "date-fns";
 
-export const EditProjectDialog = ({ 
-  open, 
-  projectId, 
-  onClose 
-}) => {
+export const EditProjectDialog = ({ open, projectId, onClose }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [activeTab, setActiveTab] = useState("details");
+  const [isSaving, setIsSaving] = useState(false);
   const [projectData, setProjectData] = useState(null);
   const [formData, setFormData] = useState({
-    projectName: '',
-    status: '',
-    notes: ''
+    projectName: "",
+    notes: "",
+    status: "pending",
   });
-  const [fileUpload, setFileUpload] = useState(null);
-  const [uploadLoading, setUploadLoading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [uploadError, setUploadError] = useState('');
+  const [labels, setLabels] = useState([]);
+  const [newLabels, setNewLabels] = useState([]);
+  const [isUpdatingLabels, setIsUpdatingLabels] = useState(false);
 
   useEffect(() => {
     if (open && projectId) {
       fetchProjectDetails(projectId);
+    } else {
+      setIsLoading(false);
     }
   }, [open, projectId]);
 
   const fetchProjectDetails = async (id) => {
     setIsLoading(true);
     try {
-      const response = await apiService.get(`${Constants.API_ENDPOINTS.ADMIN_GET_SHIPMENT_BY_ID}/${id}`);
-      
-      if (response.success) {
-        setProjectData(response.data);
+      const result = await apiService.get(
+        `${Constants.API_ENDPOINTS.ADMIN_GET_SHIPMENT_BY_ID}/${id}`
+      );
+
+      if (result.success) {
+        setProjectData(result.data);
         setFormData({
-          projectName: response.data.projectName || '',
-          status: response.data.status || 'pending',
-          notes: response.data.notes || ''
+          projectName: result.data.projectName || "",
+          notes: result.data.notes || "",
+          status: result.data.status || "pending",
         });
+
+        // Parse label URLs
+        const existingLabels = result.data.labelUrl
+          ? result.data.labelUrl.split(",").map((url) => ({ url }))
+          : [];
+        setLabels(existingLabels);
       } else {
-        console.error("Failed to fetch project details:", response.message);
+        console.error("Failed to fetch project details:", result.message);
       }
     } catch (err) {
       console.error("Error fetching project details:", err);
@@ -87,411 +85,471 @@ export const EditProjectDialog = ({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleStatusChange = (value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      status: value
+      status: value,
     }));
   };
 
-  const handleSubmit = async () => {
-    // In a real implementation, you would save the changes here
-    // Since we're focusing on the UI, we'll just close the dialog
-    onClose();
-  };
-
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFileUpload(file);
-      setUploadError('');
+    const files = Array.from(e.target.files);
+
+    const allowedTypes = [
+      "application/pdf",
+      "text/plain",
+      "text/csv",
+      "application/vnd.ms-excel", // .xls
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" // .xlsx
+    ];
+
+    const validFiles = files.filter((file) => allowedTypes.includes(file.type));
+
+    if (validFiles.length !== files.length) {
+      alert("Một số file không đúng định dạng được cho phép (.pdf, .csv, .xls, .xlsx, .txt)");
     }
+    setNewLabels((prev) => [...prev, ...validFiles]);
   };
 
-  const handleFileUpload = async () => {
-    if (!fileUpload) {
-      setUploadError('Please select a file to upload');
-      return;
-    }
+  const removeLabel = (index) => {
+    setLabels((prev) => prev.filter((_, i) => i !== index));
+  };
 
-    setUploadLoading(true);
-    setUploadSuccess(false);
-    setUploadError('');
+  const removeNewLabel = (index) => {
+    setNewLabels((prev) => prev.filter((_, i) => i !== index));
+  };
 
+  const updateLabels = async () => {
+    if (newLabels.length === 0) return;
+  
+    setIsUpdatingLabels(true);
     try {
-      const formData = new FormData();
-      formData.append('file', fileUpload);
-      formData.append('projectId', projectId);
-
-      const response = await apiService.post(
-        'admin/shipments/labels', 
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      );
-
-      if (response.success) {
-        setUploadSuccess(true);
-        setFileUpload(null);
-        // Refresh project data to show new labels
-        fetchProjectDetails(projectId);
-      } else {
-        setUploadError(response.message || 'Upload failed');
+      // Process each new label individually
+      const uploadedLabels = [];
+      
+      for (const file of newLabels) {
+        
+        // Make API call
+        const response = await apiService.postFormData(
+          `${Constants.API_ENDPOINTS.UPDATE_PROJECT_LABELS}`, 
+          {file: file, shipmentId: projectId}
+        );
+        
+        // Check if response is successful
+        if (response.success) {
+          uploadedLabels.push({
+            url: response.data.fileUrl
+          });
+        } else {
+          console.error("Error uploading label:", response.message);
+        }
       }
+      // Add successfully uploaded labels to existing labels
+      if (uploadedLabels.length > 0) {
+        setLabels(prevLabels => [...prevLabels, ...uploadedLabels]);
+        setNewLabels([]);
+      }
+  
+      console.log("Labels updated successfully");
     } catch (err) {
-      setUploadError('Error uploading file: ' + (err.message || 'Unknown error'));
+      console.error("Error updating labels:", err);
     } finally {
-      setUploadLoading(false);
+      setIsUpdatingLabels(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'on_hold': return 'bg-orange-100 text-orange-800';
-      case 'draft': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Create form data to send
+      const dataToSend = {
+        labels: labels.map((label) => label.url),
+        status : formData.status,
+        notes: formData.notes,
+      }
+      console.log("🚀 ~ handleSave ~ dataToSend:", dataToSend)
+
+      // In a real implementation, replace this with your actual API call
+      const response = await apiService.put(`${Constants.API_ENDPOINTS.UPDATE_SHIPMENT}/${projectId}`, dataToSend);
+      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      if (!response.success) {
+        console.error("Error saving project:", response.message);
+        return;
+      }
+
+      onClose();
+    } catch (err) {
+      console.error("Error saving project:", err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  // Format date helper
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const toggleEditMode = () => {
-    setIsEditMode(!isEditMode);
-  };
-
-  const getFileIcon = (fileName) => {
-    if (!fileName) return <File className="h-4 w-4" />;
-    const extension = fileName.split('.').pop().toLowerCase();
-    
-    if (extension === 'pdf') {
-      return <FileText className="h-4 w-4 text-red-500" />;
-    } else if (['xlsx', 'xls', 'csv'].includes(extension)) {
-      return <FileSpreadsheet className="h-4 w-4 text-green-600" />;
+    try {
+      return format(new Date(dateString), "dd MMM yyyy, HH:mm");
+    } catch (e) {
+      return dateString;
     }
-    
-    return <File className="h-4 w-4" />;
   };
 
-  if (!open) return null;
+  // Helper to format file name from URL
+  const getFileName = (url) => {
+    if (!url) return "N/A";
+    return url.split("/").pop();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Project Details</span>
-            <div className="flex gap-2 mt-4">
-              <Button 
-                variant={isEditMode ? "outline" : "default"} 
-                size="sm" 
-                onClick={toggleEditMode}
-                disabled={isLoading || activeTab !== "details"}
-              >
-                {isEditMode ? (
-                  <>
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Mode
-                  </>
-                ) : (
-                  <>
-                    <Pencil className="h-4 w-4 mr-1" />
-                    Edit Mode
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogTitle>
-          <DialogDescription>
-            Manage project information, labels and files
-          </DialogDescription>
+          <DialogTitle className="text-xl font-bold">Edit Project</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
-          <div className="flex justify-center items-center p-8">
-            <div className="animate-spin w-8 h-8 border-4 border-blue-600 rounded-full border-t-transparent"></div>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <span className="ml-2">Loading project data...</span>
           </div>
         ) : projectData ? (
-          <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols mb-4">
-              <TabsTrigger value="details">Project Details</TabsTrigger>
-              {/* <TabsTrigger value="labels">Labels & Files</TabsTrigger> */}
-            </TabsList>
-            
-            <TabsContent value="details" className="space-y-4">
-              {/* View Mode */}
-              {!isEditMode && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Project ID</Label>
-                      <p className="font-medium">{projectData.id}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Status</Label>
-                      <p>
-                        <Badge className={getStatusColor(projectData.status)}>
-                          {projectData.status.charAt(0).toUpperCase() + projectData.status.slice(1)}
-                        </Badge>
-                      </p>
-                    </div>
-                  </div>
+          <div className="space-y-6">
+            {/* Basic Information Section */}
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <h3 className="text-lg font-medium mb-3">Basic Information</h3>
 
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Project Name</Label>
-                    <p className="font-medium">{projectData.projectName}</p>
-                  </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label htmlFor="id" className="flex items-center text-sm">
+                    <span className="mr-1">Project ID</span>
+                  </Label>
+                  <Input
+                    id="id"
+                    value={projectData.id || ""}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="userId" className="flex items-center text-sm">
+                    <span className="mr-1">User ID</span>
+                  </Label>
+                  <Input
+                    id="userId"
+                    value={projectData.userId || ""}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Created At</Label>
-                      <p className="flex items-center text-sm">
-                        <Calendar className="mr-1 h-4 w-4 text-muted-foreground" />
-                        {formatDate(projectData.createdAt)}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Processed At</Label>
-                      <p className="flex items-center text-sm">
-                        <Calendar className="mr-1 h-4 w-4 text-muted-foreground" />
-                        {formatDate(projectData.processedAt)}
-                      </p>
-                    </div>
-                  </div>
+              <div className="mb-4">
+                <Label
+                  htmlFor="projectName"
+                  className="flex items-center text-sm"
+                >
+                  <span className="mr-1">Project Name</span>
+                </Label>
+                <Input
+                  id="projectName"
+                  name="projectName"
+                  value={formData.projectName}
+                  disabled
+                />
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Total Orders</Label>
-                      <p className="font-medium">{projectData.totalOrders}</p>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label
+                    htmlFor="fileName"
+                    className="flex items-center text-sm"
+                  >
+                    <FileText className="h-4 w-4 mr-1 text-gray-400" />
+                    <span>File Name</span>
+                  </Label>
+
+                  <a href={projectData.fileName}>
+                    <div className="bg-white text-gray-500 px-5 py-2  rounded text-sm flex items-center mt-2 hover:text-gray-700 transition-colors">
+                    <FileChartColumn className="h-4 w-4 mr-1 text-gray-400" /> 
+                    <span className="text-blue-600 hover:underline truncate flex-1">
+                      {getFileName(projectData.fileName) || ""}
+                    </span> 
                     </div>
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Total Cost</Label>
-                      <p className="font-medium">${parseFloat(projectData.totalCost).toFixed(2)}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* File Name */}
-                    <div className="w-[90%]">
-                      <Label className="text-sm text-muted-foreground mb-1 block">File Name</Label>
-                      <a
-                        href={projectData.fileName}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 bg-[#f8f9fd] hover:bg-[#e7ecff] transition text-sm text-[#3c2a92]"
+                  </a>
+                </div>
+
+                <div>
+                  <Label htmlFor="status" className="flex items-center text-sm">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>Status</span>
+                  </Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={handleStatusChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="hold">Hold</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="totalOrders"
+                    className="flex items-center text-sm"
+                  >
+                    <Package className="h-4 w-4 mr-1" />
+                    <span>Total Orders</span>
+                  </Label>
+                  <Input
+                    id="totalOrders"
+                    value={projectData.totalOrders || "0"}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="totalCost"
+                    className="flex items-center text-sm"
+                  >
+                    <DollarSign className="h-4 w-4 mr-1" />
+                    <span>Total Cost</span>
+                  </Label>
+                  <Input
+                    id="totalCost"
+                    value={projectData.totalCost || "0.00"}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Dates Section */}
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <h3 className="text-lg font-medium mb-3">Dates</h3>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label
+                    htmlFor="createdAt"
+                    className="flex items-center text-sm"
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>Created At</span>
+                  </Label>
+                  <Input
+                    id="createdAt"
+                    value={formatDate(projectData.createdAt)}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="updatedAt"
+                    className="flex items-center text-sm"
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>Updated At</span>
+                  </Label>
+                  <Input
+                    id="updatedAt"
+                    value={formatDate(projectData.updatedAt)}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="processedAt"
+                    className="flex items-center text-sm"
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>Processed At</span>
+                  </Label>
+                  <Input
+                    id="processedAt"
+                    value={formatDate(projectData.processedAt)}
+                    disabled
+                    className="bg-gray-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Notes Section */}
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <Label htmlFor="notes" className="text-sm mb-2 block">
+                Notes
+              </Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Labels Section */}
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-medium">Labels</h3>
+                {newLabels.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className={"cursor-pointer"}
+                    onClick={updateLabels}
+                    disabled={isUpdatingLabels}
+                  >
+                    {isUpdatingLabels ? (
+                      <>
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Update Labels"
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              {/* Existing Labels */}
+              {labels.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2">Existing Labels</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {labels.map((label, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-white p-2 rounded border"
                       >
-                        <FileSpreadsheet className="h-4 w-4 text-[#6b6b6b]" />
-                        <span className="truncate max-w-[200px]">
-                          {projectData.fileName?.split("/").pop() || "Không có file"}
+                        <a
+                          href={label.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm truncate flex-1 text-blue-600 hover:underline flex items-center"
+                        >
+                          <FileText className="h-4 w-4 mr-1 text-gray-400" />
+                          {label.url.split("/").pop()}
+                        </a>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeLabel(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New Labels */}
+              {newLabels.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2">New Labels</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {newLabels.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-blue-50 p-2 rounded border border-blue-100"
+                      >
+                        <span className="text-sm truncate flex-1 flex items-center">
+                          <FileText className="h-4 w-4 mr-1 text-blue-500" />
+                          {file.name}
                         </span>
-                      </a>
-                    </div>
-
-                    <div className="w-[90%]">
-                      <Label className="text-sm text-muted-foreground mb-1 block">File Labels</Label>
-
-                      {projectData.labelUrl ? (
-                        <div className="space-y-2">
-                          {projectData.labelUrl
-                            .split(",")
-                            .map((url, index) => (
-                              <a
-                                key={index}
-                                href={url.trim()}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 bg-[#f8f9fd] hover:bg-[#e7ecff] transition text-sm text-[#3c2a92]"
-                              >
-                                <FileSpreadsheet className="h-4 w-4 text-[#6b6b6b]" />
-                                <span className="truncate max-w-[200px]">
-                                  {url.trim().split("/").pop()}
-                                </span>
-                              </a>
-                            ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500 italic">Chưa có file label nào.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Notes</Label>
-                    <p className="text-sm p-2 bg-gray-50 rounded-md min-h-20">
-                      {projectData.notes || "No notes added."}
-                    </p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeNewLabel(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Edit Mode */}
-              {isEditMode && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="projectName">Project Name</Label>
-                    <Input 
-                      id="projectName"
-                      name="projectName"
-                      value={formData.projectName}
-                      onChange={handleInputChange}
-                    />
+              {/* Upload Label Button */}
+              <div className="mt-2">
+                <Label htmlFor="upload-labels" className="cursor-pointer">
+                  <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center hover:border-blue-500 transition-colors">
+                    <Upload className="mx-auto h-6 w-6 text-gray-400" />
+                    <span className="mt-2 block text-sm font-medium">
+                      Upload PDF Labels
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      Click to browse or drag & drop
+                    </span>
                   </div>
-
-                  <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select 
-                      value={formData.status} 
-                      onValueChange={handleStatusChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="on_hold">On Hold</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea 
-                      id="notes"
-                      name="notes"
-                      value={formData.notes}
-                      onChange={handleInputChange}
-                      rows={5}
-                    />
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="labels" className="space-y-6">
-
-              {/* File Upload Section */}
-              <Card>
-                <CardHeader className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Upload New Label File</h3>
-                  </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
-                      <FileUp className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        Drop your file here or click to browse
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Supports PDF, Excel (.xlsx, .xls) and CSV files
-                      </p>
-                      
-                      <Input
-                        type="file"
-                        className="mt-4"
-                        accept=".pdf,.xlsx,.xls,.csv"
-                        onChange={handleFileChange}
-                      />
-                      
-                      {fileUpload && (
-                        <div className="mt-2 flex items-center justify-center text-sm">
-                          {getFileIcon(fileUpload.name)}
-                          <span className="ml-1">{fileUpload.name}</span>
-                          <span className="ml-2 text-muted-foreground">
-                            ({(fileUpload.size / 1024).toFixed(2)} KB)
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {uploadSuccess && (
-                      <Alert className="bg-green-50 text-green-800 border-green-200">
-                        <AlertDescription>
-                          File uploaded successfully!
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    {uploadError && (
-                      <Alert className="bg-red-50 text-red-800 border-red-200">
-                        <AlertDescription>
-                          {uploadError}
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    <Button 
-                      onClick={handleFileUpload}
-                      disabled={!fileUpload || uploadLoading}
-                      className="w-full"
-                    >
-                      {uploadLoading ? (
-                        <>
-                          <div className="animate-spin w-4 h-4 border-2 border-white rounded-full border-t-transparent mr-2"></div>
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <FileUp className="mr-2 h-4 w-4" />
-                          Upload Label File
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                  <input
+                    id="upload-labels"
+                    type="file"
+                    multiple
+                    accept=".csv,.xlsx,.xls,.pdf,.txt"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </Label>
+              </div>
+            </div>
+          </div>
         ) : (
-          <div className="text-center p-4">
-            No project data found or an error occurred.
+          <div className="text-center py-4 text-red-500">
+            Failed to load project data
           </div>
         )}
 
         <DialogFooter>
-          {isEditMode ? (
-            <>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsEditMode(false)}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSubmit} 
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </Button>
-            </>
-          ) : (
-            <Button 
-              variant="outline" 
-              onClick={onClose}
-            >
-              Close
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isSaving || isUpdatingLabels}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={isLoading || isSaving || isUpdatingLabels || !projectData}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
