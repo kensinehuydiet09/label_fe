@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   Calendar,
   Save,
   X,
@@ -24,28 +24,24 @@ import {
   Pencil,
   Mail,
   User,
-  Wallet
+  Wallet,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { apiService } from '@/services/api';
-import Constants from '@/constants';
-import { toast } from 'sonner';
+import { apiService } from "@/services/api";
+import Constants from "@/constants";
+import { toast } from "sonner";
 
-export const EditUserDialog = ({ 
-  open, 
-  userId, 
-  onClose,
-  onUserUpdated 
-}) => {
+export const EditUserDialog = ({ open, userId, onClose, onUserUpdated }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [userData, setUserData] = useState(null);
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    role: '',
-    isActive: true
+    username: "",
+    email: "",
+    role: "",
+    isActive: true,
+    balance: 0,
   });
 
   useEffect(() => {
@@ -57,15 +53,19 @@ export const EditUserDialog = ({
   const fetchUserDetails = async (id) => {
     setIsLoading(true);
     try {
-      const response = await apiService.get(`${Constants.API_ENDPOINTS.ADMIN_GET_USER_BY_ID}/${id}`);
-      
+      const response = await apiService.get(
+        `${Constants.API_ENDPOINTS.ADMIN_GET_USER_BY_ID}/${id}`
+      );
+      console.log("🚀 ~ fetchUserDetails ~ response:", response)
+
       if (response.success) {
         setUserData(response.data);
         setFormData({
           username: response.data.username,
           email: response.data.email,
           role: response.data.role,
-          isActive: response.data.isActive
+          isActive: response.data.isActive,
+          balance: response.data.balance,
         });
       } else {
         toast.error("Failed to fetch user details");
@@ -80,23 +80,23 @@ export const EditUserDialog = ({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleStatusChange = (value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      isActive: value === 'active'
+      isActive: value === "active",
     }));
   };
 
   const handleRoleChange = (value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      role: value
+      role: value,
     }));
   };
 
@@ -123,12 +123,12 @@ export const EditUserDialog = ({
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -145,9 +145,9 @@ export const EditUserDialog = ({
           <DialogTitle className="flex items-center justify-between">
             <span>User Details</span>
             <div className="flex gap-2 mt-5">
-              <Button 
-                variant={isEditMode ? "outline" : "default"} 
-                size="sm" 
+              <Button
+                variant={isEditMode ? "outline" : "default"}
+                size="sm"
                 onClick={toggleEditMode}
                 disabled={isLoading}
               >
@@ -165,9 +165,7 @@ export const EditUserDialog = ({
               </Button>
             </div>
           </DialogTitle>
-          <DialogDescription>
-            View or edit user information
-          </DialogDescription>
+          <DialogDescription>View or edit user information</DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
@@ -181,13 +179,23 @@ export const EditUserDialog = ({
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm text-muted-foreground">User ID</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      User ID
+                    </Label>
                     <p className="font-medium">{userData.id}</p>
                   </div>
                   <div>
-                    <Label className="text-sm text-muted-foreground">Status</Label>
-                    <Badge className={userData.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {userData.isActive ? 'Active' : 'Inactive'}
+                    <Label className="text-sm text-muted-foreground">
+                      Status
+                    </Label>
+                    <Badge
+                      className={
+                        userData.isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }
+                    >
+                      {userData.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                 </div>
@@ -195,7 +203,9 @@ export const EditUserDialog = ({
                 <div className="space-y-2">
                   <div className="flex items-center">
                     <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <Label className="text-sm text-muted-foreground">Username</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      Username
+                    </Label>
                   </div>
                   <p className="font-medium">{userData.username}</p>
                 </div>
@@ -203,21 +213,27 @@ export const EditUserDialog = ({
                 <div className="space-y-2">
                   <div className="flex items-center">
                     <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <Label className="text-sm text-muted-foreground">Email</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      Email
+                    </Label>
                   </div>
                   <p className="font-medium">{userData.email}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm text-muted-foreground">Created At</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      Created At
+                    </Label>
                     <p className="flex items-center text-sm">
                       <Calendar className="mr-1 h-4 w-4 text-muted-foreground" />
                       {formatDate(userData.createdAt)}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-sm text-muted-foreground">Updated At</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      Updated At
+                    </Label>
                     <p className="flex items-center text-sm">
                       <Calendar className="mr-1 h-4 w-4 text-muted-foreground" />
                       {formatDate(userData.updatedAt)}
@@ -228,9 +244,13 @@ export const EditUserDialog = ({
                 <div className="space-y-2">
                   <div className="flex items-center">
                     <Wallet className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <Label className="text-sm text-muted-foreground">Balance</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      Balance
+                    </Label>
                   </div>
-                  <p className="font-medium">${parseFloat(userData.balance).toFixed(2)}</p>
+                  <p className="font-medium">
+                    ${parseFloat(userData.balance).toFixed(2)}
+                  </p>
                 </div>
               </div>
             )}
@@ -240,9 +260,10 @@ export const EditUserDialog = ({
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="username">Username</Label>
-                  <Input 
+                  <Input
                     id="username"
                     name="username"
+                    disabled
                     value={formData.username}
                     onChange={handleInputChange}
                   />
@@ -250,35 +271,48 @@ export const EditUserDialog = ({
 
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input 
+                  <Input
                     id="email"
                     name="email"
+                    disabled
                     type="email"
                     value={formData.email}
                     onChange={handleInputChange}
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="role">Role</Label>
-                  <Select 
-                    value={formData.role} 
-                    onValueChange={handleRoleChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <Label htmlFor="balance">Balance</Label>
+                    <Input
+                      id="balance"
+                      name="balance"
+                      type="number"
+                      value={formData.balance}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="role">Role</Label>
+                    <Select
+                      value={formData.role}
+                      onValueChange={handleRoleChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="user">User</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select 
-                    value={formData.isActive ? 'active' : 'inactive'} 
+                  <Select
+                    value={formData.isActive ? "active" : "inactive"}
                     onValueChange={handleStatusChange}
                   >
                     <SelectTrigger>
@@ -302,15 +336,12 @@ export const EditUserDialog = ({
         <DialogFooter>
           {isEditMode ? (
             <>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsEditMode(false)}
-              >
+              <Button variant="outline" onClick={() => setIsEditMode(false)}>
                 <X className="mr-2 h-4 w-4" />
                 Cancel
               </Button>
-              <Button 
-                onClick={handleSubmit} 
+              <Button
+                onClick={handleSubmit}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Save className="mr-2 h-4 w-4" />
@@ -318,10 +349,7 @@ export const EditUserDialog = ({
               </Button>
             </>
           ) : (
-            <Button 
-              variant="outline" 
-              onClick={onClose}
-            >
+            <Button variant="outline" onClick={onClose}>
               Close
             </Button>
           )}
@@ -329,4 +357,4 @@ export const EditUserDialog = ({
       </DialogContent>
     </Dialog>
   );
-}; 
+};

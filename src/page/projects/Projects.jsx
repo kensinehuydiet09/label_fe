@@ -105,24 +105,16 @@ const Projects = () => {
   }, [pageSize]); 
 
   useEffect(() => {
-    // Filter projects based on search query and status
-    let filtered = [...projects];
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p => 
-        p.projectName.toLowerCase().includes(query) || 
-        p.id.toLowerCase().includes(query)
-      );
-    }
-    
-    if (statusFilter !== 'All') {
-      filtered = filtered.filter(p => p.status === statusFilter.toLowerCase());
-    }
-    
-    // Here we would typically call API with filters instead of filtering client-side
-    // For this example, we're just filtering the existing data
-  }, [searchQuery, statusFilter, pageSize]);
+    const fetchProjects = async () => {
+      try {
+
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      }
+    };
+  
+    fetchProjects();
+  }, [searchQuery, statusFilter, pageSize, pagination.currentPage]);
 
   const handlePageChange = (newPage) => {
     fetchProjects(newPage, pageSize);

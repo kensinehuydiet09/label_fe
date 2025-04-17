@@ -15,7 +15,9 @@ const Constants = {
     UPLOAD_FILE: "/user/upload",
     CREATE_PROJECT : "/user/shipments",
     USER_GET_PROJECT : "/user/shipments",
+    USER_SEARCH_PROJECT : "/user/shipment/search",
     USER_GET_PROJECT_BY_ID : "/user/shipment",
+    USER_DELETE_PROJECT : "/user/shipment",
     USER_CHECKOUT_SESSION : "/user/create-checkout-session",
     USER_CHANGE_PASSWORD : "/user/change-password",
 

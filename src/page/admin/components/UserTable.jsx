@@ -46,6 +46,7 @@ const UserTable = ({ users, loading, onEditUser, onDeleteUser }) => {
                   <TableHead className="hidden md:table-cell">Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="hidden sm:table-cell">Balance</TableHead>
                   <TableHead className="hidden lg:table-cell">Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -78,6 +79,9 @@ const UserTable = ({ users, loading, onEditUser, onDeleteUser }) => {
                         <Badge variant="outline" className={user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                           {user.isActive ? 'Active' : 'Inactive'}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {user.balance ? `$${user.balance}` : 'N/A'}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         {formatMonthYear(user.createdAt)}
