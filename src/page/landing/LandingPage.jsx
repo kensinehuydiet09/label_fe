@@ -62,18 +62,9 @@ const LandingPage = () => {
           backgroundPosition: "center",
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-          <div className="text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 md:py-20 ">
+          <div className="text-center h-40 flex flex-col justify-center items-center">
             <h1 className="text-4xl">Ship, manage, track, deliver</h1>
-          </div>
-          <div className="mt-4 flex justify-center">
-              <div className="">
-                <div className="w-36 h-36 flex flex-col justify-center items-center bg-sky-500 text-black">
-                  <div className="w-12 h-12 text-black ">
-                  </div>
-                    <h1 className="text-black font-bold">RATE & SHIP</h1>
-                </div>
-              </div>
           </div>
         </div>
       </div>
