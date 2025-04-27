@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";
 
@@ -8,13 +9,18 @@ const AuthLayout = ({ children, title, subtitle }) => {
       {/* Header with FedEx-inspired logo */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
-          <div className="flex items-center">
             {/* FedEx-inspired logo */}
-            <div className="flex items-center">
-              <span className="text-purple-700 font-bold text-2xl tracking-tight">Label</span>
-              <span className="text-orange-600 font-bold text-2xl tracking-tight">Vaults</span>
+            <Link to="/">
+            <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-purple-800 rounded-sm flex items-center justify-center">
+                  <Package className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex items-center">
+                  <span className="text-purple-600 font-bold text-2xl tracking-tight">Label</span>
+                  <span className="text-orange-500 font-bold text-2xl tracking-tight">Vaults</span>
+                </div>
             </div>
-          </div>
+            </Link>
         </div>
       </header>
 

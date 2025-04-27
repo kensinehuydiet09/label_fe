@@ -32,23 +32,10 @@ const Login = () => {
       navigate("/dashboard");
     } catch (err) {
       console.error("Login failed:", err);
-
       if (err.response) {
-        switch (err.response.status) {
-          case 401:
-            setError("Incorrect email or password. Please try again.");
-            break;
-          case 403:
-            setError("Your account is locked. Please contact support.");
-            break;
-          case 404:
-            setError("Account not found. Please check your email.");
-            break;
-          default:
-            setError("Login failed. Please try again later.");
-        }
+        setError("Invalid credentials or account issue. Please try again.");
       } else if (err.request) {
-        setError("Cannot connect to server. Please check your internet connection.");
+        setError("Connection error. Please check your internet connection.");
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -107,12 +94,12 @@ const Login = () => {
                 >
                   Password
                 </label>
-                <span
+                {/* <span
                   className="text-sm text-purple-700 hover:text-purple-900 cursor-pointer font-medium"
                   onClick={() => navigate("/forgot-password")}
                 >
                   Forgot password?
-                </span>
+                </span> */}
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -130,7 +117,7 @@ const Login = () => {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none cursor-pointer"
                   onClick={togglePasswordVisibility}
                   disabled={loading}
                 >
@@ -153,7 +140,7 @@ const Login = () => {
 
             <Button
               type="submit"
-              className="w-full py-6 bg-purple-700 hover:bg-purple-800 text-white font-medium"
+              className="w-full py-6 bg-purple-700 hover:bg-purple-800 text-white font-medium cursor-pointer"
               disabled={loading}
             >
               {loading ? "Signing In..." : "Sign In"}
